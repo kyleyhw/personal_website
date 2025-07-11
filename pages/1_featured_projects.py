@@ -142,8 +142,6 @@ else:
             repo_url = repo.get('url', '#')
             # Escape the description to prevent HTML injection issues
             description = html.escape(repo.get('description', 'No description provided.'))
-            stargazers_count = repo.get('stargazerCount', 0)
-            forks_count = repo.get('forkCount', 0)
 
             lang_name = "N/A"
             lang_color = "#808080"
@@ -159,7 +157,6 @@ else:
                 </div>
                 <div class="project-footer">
                     <span class="lang-color-dot" style="background-color:{lang_color};"></span> {lang_name}
-                    <span style="margin-left: auto;">★ {stargazers_count}</span>
                 </div>
             </div>
             """
