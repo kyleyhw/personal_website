@@ -5,7 +5,7 @@ from PIL import Image
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Kyle Wong | Astrophysics",
-    page_icon="🔭",
+    page_icon="�",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -17,17 +17,17 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
 
-    /* Style for the project cards */
+    /* Style for the project cards - Light Theme */
     .project-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
         gap: 1.5rem;
     }
     .project-card {
-        border: 1px solid #30363d;
+        border: 1px solid #d0d7de; /* Light gray border */
         border-radius: 8px;
         padding: 1.5rem;
-        background-color: #0d1117;
+        background-color: #f6f8fa; /* Light background */
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -36,24 +36,24 @@ st.markdown(
     }
     .project-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
     }
     .project-card h4 {
         margin-top: 0;
     }
     .project-card h4 a {
         text-decoration: none;
-        color: #58a6ff; /* GitHub link blue */
+        color: #0969da; /* Standard link blue */
     }
     .project-card p {
-        color: #8b949e; /* GitHub secondary text color */
+        color: #57606a; /* Dark gray text */
         font-size: 0.9rem;
         flex-grow: 1;
         margin-bottom: 1rem;
     }
     .project-footer {
         font-size: 0.8rem;
-        color: #8b949e;
+        color: #57606a;
         display: flex;
         align-items: center;
         flex-wrap: wrap;
