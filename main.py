@@ -39,7 +39,7 @@ def fetch_pinned_repos(username):
 # --- Sidebar ---
 with st.sidebar:
     try:
-        st.image("assets/profile_pic.jpeg", width=250)
+            st.image("assets/profile_pic.jpg", width=250)
     except FileNotFoundError:
         st.warning("Profile picture not found. Please add 'profile_pic.jpeg' to an 'assets' folder.")
 
