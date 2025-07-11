@@ -11,11 +11,60 @@ st.set_page_config(
 )
 
 # --- LOAD INTER FONT AND CUSTOM CSS ---
-# This injects the Google Font into the app's HTML head.
+# This injects the Google Font and custom styles into the app's HTML head.
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+
+    /* Style for the project cards */
+    .project-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+    .project-card {
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 1.5rem;
+        background-color: #0d1117;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+        height: 100%; /* Make cards in the same row have the same height */
+    }
+    .project-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    .project-card h4 {
+        margin-top: 0;
+    }
+    .project-card h4 a {
+        text-decoration: none;
+        color: #58a6ff; /* GitHub link blue */
+    }
+    .project-card p {
+        color: #8b949e; /* GitHub secondary text color */
+        font-size: 0.9rem;
+        flex-grow: 1;
+        margin-bottom: 1rem;
+    }
+    .project-footer {
+        font-size: 0.8rem;
+        color: #8b949e;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .lang-color-dot {
+        height: 12px;
+        width: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -155,13 +204,34 @@ else:
         st.info(
             f"No pinned repositories found for user '{GITHUB_USERNAME}'. Please ensure you have pinned some repositories on your GitHub profile.")
     else:
-        # Create a two-column layout for the projects
-        col1, col2 = st.columns(2)
-        for i, repo in enumerate(repos):
-            with col1 if i % 2 == 0 else col2:
-                st.markdown(f"#### [{repo.get('name', 'No name')}]({repo.get('url', '#')})")
-                st.write(f"⭐ {repo.get('stargazerCount', 0)} | 🍴 {repo.get('forkCount', 0)}")
-                st.write(repo.get('description', 'No description provided.'))
-                if repo.get('primaryLanguage'):
-                    st.write(f"**Language:** {repo['primaryLanguage']['name']}")
-                st.write("---")
+        # Generate HTML for the project cards
+        project_cards_html = ""
+        for repo in repos:
+            # Use .get() for all keys to prevent errors if a key is missing from the API response
+            repo_name = repo.get('name', 'No name')
+            repo_url = repo.get('url', '#')
+            description = repo.get('description', 'No description provided.')
+            stargazers_count = repo.get('stargazerCount', 0)
+            forks_count = repo.get('forkCount', 0)
+
+            lang_name = "N/A"
+            lang_color = "#808080"  # Default to gray
+            if repo.get('primaryLanguage'):
+                lang_name = repo['primaryLanguage'].get('name', 'N/A')
+                lang_color = repo['primaryLanguage'].get('color', '#808080')
+
+            project_cards_html += f"""
+            <div class="project-card">
+                <div>
+                    <h4><a href="{repo_url}" target="_blank">{repo_name}</a></h4>
+                    <p>{description}</p>
+                </div>
+                <div class="project-footer">
+                    <span class="lang-color-dot" style="background-color:{lang_color};"></span> {lang_name}
+                    <span style="margin-left: auto;">⭐ {stargazers_count} | 🍴 {forks_count}</span>
+                </div>
+            </div>
+            """
+
+        # Display the cards in a grid
+        st.markdown(f'<div class="project-grid">{project_cards_html}</div>', unsafe_allow_html=True)
