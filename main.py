@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from pathlib import Path # <-- Import the Path object
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -38,10 +39,15 @@ def fetch_pinned_repos(username):
 
 # --- Sidebar ---
 with st.sidebar:
-    try:
-            st.image("assets/profile_pic.jpg", width=250)
-    except FileNotFoundError:
-        st.warning("Profile picture not found. Please add 'profile_pic.jpeg' to an 'assets' folder.")
+    # --- Profile Image ---
+    # Construct the path relative to the script file
+    current_dir = Path(__file__).parent if "__file__" in locals() else Path.cwd()
+    profile_pic_path = current_dir / "assets" / "profile_pic.jpeg"
+
+    if profile_pic_path.exists():
+        st.image(str(profile_pic_path), width=250)
+    else:
+        st.warning("Profile picture not found at assets/profile_pic.jpeg")
 
     st.title("Kyle Wong")
     st.write("MASt Astrophysics Student")
