@@ -1,6 +1,10 @@
 import streamlit as st
 import requests
 
+# --- LOAD INTER FONT ---
+from load_style import *
+load_font()
+
 # --- GITHUB AND ASSET SETUP ---
 GITHUB_USERNAME = "kyleyhw"
 
