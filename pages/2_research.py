@@ -1,9 +1,5 @@
 import streamlit as st
 
-# --- LOAD INTER FONT ---
-from load_style import *
-load_font()
-
 # --- RESEARCH & SKILLS PAGE CONTENT ---
 st.title("Research & Skills")
 
