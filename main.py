@@ -16,6 +16,48 @@ st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+
+    /* Style for the project cards */
+    .project-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1rem;
+    }
+    .project-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: box-shadow 0.3s ease-in-out;
+    }
+    .project-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .project-card h4 a {
+        text-decoration: none;
+        color: #0366d6; /* GitHub blue */
+    }
+    .project-card p {
+        color: #586069; /* GitHub secondary text color */
+        font-size: 0.9rem;
+        flex-grow: 1;
+        margin-bottom: 1rem;
+    }
+    .project-footer {
+        font-size: 0.8rem;
+        color: #586069;
+        display: flex;
+        align-items: center;
+    }
+    .lang-color-dot {
+        height: 12px;
+        width: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -155,13 +197,33 @@ else:
         st.info(
             f"No pinned repositories found for user '{GITHUB_USERNAME}'. Please ensure you have pinned some repositories on your GitHub profile.")
     else:
-        # Create a two-column layout for the projects
-        col1, col2 = st.columns(2)
-        for i, repo in enumerate(repos):
-            with col1 if i % 2 == 0 else col2:
-                st.markdown(f"#### [{repo.get('name', 'No name')}]({repo.get('url', '#')})")
-                st.write(f"⭐ {repo.get('stargazerCount', 0)} | 🍴 {repo.get('forkCount', 0)}")
-                st.write(repo.get('description', 'No description provided.'))
-                if repo.get('primaryLanguage'):
-                    st.write(f"**Language:** {repo['primaryLanguage']['name']}")
-                st.write("---")
+        # Generate HTML for the project cards
+        project_cards = []
+        for repo in repos:
+            # Use .get() for all keys to prevent errors if a key is missing from the API response
+            repo_name = repo.get('name', 'No name')
+            repo_url = repo.get('url', '#')
+            description = repo.get('description', 'No description provided.')
+            stargazers_count = repo.get('stargazerCount', 0)
+            forks_count = repo.get('forkCount', 0)
+
+            lang_name = ""
+            lang_color = "#808080"  # Default to gray
+            if repo.get('primaryLanguage'):
+                lang_name = repo['primaryLanguage'].get('name', 'N/A')
+                lang_color = repo['primaryLanguage'].get('color', '#808080')
+
+            card_html = f"""
+            <div class="project-card">
+                <h4><a href="{repo_url}" target="_blank">{repo_name}</a></h4>
+                <p>{description}</p>
+                <div class="project-footer">
+                    <span class="lang-color-dot" style="background-color:{lang_color};"></span> {lang_name}
+                    <span style="margin-left: auto;">⭐ {stargazers_count} | 🍴 {forks_count}</span>
+                </div>
+            </div>
+            """
+            project_cards.append(card_html)
+
+        # Display the cards in a grid
+        st.markdown(f'<div class="project-grid">{"".join(project_cards)}</div>', unsafe_allow_html=True)
