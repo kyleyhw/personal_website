@@ -1,40 +1,33 @@
 import streamlit as st
 import requests
-from pathlib import Path
-
-# --- PATH SETTINGS ---
-# Update this path to the location of your CV PDF file
-CV_PATH = Path("assets/kyle_wong_2page_cv_jun_2025.pdf")
-
-# --- GITHUB SETUP ---
-GITHUB_USERNAME = "kyleyhw"  # <-- IMPORTANT: Replace with your username
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="Digital CV | John Doe",
-    page_icon="👋",
+    page_title="Kyle Wong | Astrophysics",
+    page_icon="🔭",
     layout="wide"
 )
 
-
-# --- CV DOWNLOAD ---
-# This function reads the CV file and provides it for download
-def get_cv_as_bytes():
-    with open(CV_PATH, "rb") as pdf_file:
-        PDFbyte = pdf_file.read()
-    return PDFbyte
+# --- GITHUB AND CV SETUP ---
+GITHUB_USERNAME = "kyleyhw"
+# The permalink to your CV PDF on GitHub.
+CV_URL = "https://github.com/kyleyhw/kyle_wong_cv/blob/e7d2e8333b1d3c22502dc5a9bcadac1c95cb7251/kyle_wong_cv_mar_2025.pdf?raw=true"
 
 
 # --- GITHUB REPO FETCHER ---
-# This function fetches your pinned repositories from GitHub
+# This function fetches your pinned repositories from GitHub.
+@st.cache_data(ttl=3600)  # Cache the data for 1 hour
 def fetch_pinned_repos(username):
-    # Using an external service as a proxy to get pinned repos, as GitHub API v4 (GraphQL) is more complex
-    # This is a simpler approach for this use case.
+    """
+    Fetches pinned repositories for a given GitHub username.
+    Uses an external proxy as the official GitHub GraphQL API is more complex for this use case.
+    """
     try:
         response = requests.get(f"https://gh-pinned-repos.egoist.dev/?username={username}")
         if response.status_code == 200:
             return response.json()
         else:
+            st.error(f"Failed to fetch GitHub repos. Status code: {response.status_code}")
             return []
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching GitHub repos: {e}")
@@ -45,30 +38,37 @@ def fetch_pinned_repos(username):
 
 # --- Sidebar ---
 with st.sidebar:
-    st.image("assets/profile_pic.jpeg", width=250)  # <-- Add your profile picture in an 'assets' folder
-    st.title("John Doe")  # <-- Your Name
-    st.write("Senior Data Analyst at Fictional Corp.")  # <-- Your Title
-    st.write("📍 Cambridge, UK")  # <-- Your Location
+    # You'll need to create an 'assets' folder and add your profile picture.
+    # For example: assets/profile-pic.png
+    try:
+        st.image("assets/profile-pic.png", width=250)
+    except FileNotFoundError:
+        st.warning("Profile picture not found. Please add 'profile-pic.png' to an 'assets' folder.")
 
-    st.download_button(
-        label="📄 Download CV",
-        data=get_cv_as_bytes(),
-        file_name="JohnDoe_CV.pdf",  # <-- The name for the downloaded file
-        mime="application/octet-stream",
-    )
+    st.title("Kyle Wong")
+    st.write("MASt Astrophysics Student")
+    st.write("University of Cambridge")
+
+    st.markdown(f"📄 [View CV]({CV_URL})")
 
     st.write("---")
     st.subheader("Contact")
-    st.write("📫: john.doe@email.com")
-    st.write("🔗: [LinkedIn](https://linkedin.com/in/yourprofile)")  # <-- Add your LinkedIn
-    st.write("🐙: [GitHub](https://github.com/YourGitHubUsername)")  # <-- Add your GitHub
+    st.write(f"📫 kyhw2@cam.ac.uk")
+    st.write(f"🐙 [GitHub Profile](https://github.com/{GITHUB_USERNAME})")
 
 # --- Main Page ---
 st.title("About Me")
 st.write(
     """
-    I am a highly motivated and detail-oriented Senior Data Analyst with over 8 years of experience in turning data into actionable insights. 
-    My expertise lies in statistical analysis, machine learning, and data visualization. I am passionate about solving complex problems and have a proven track record of developing data-driven strategies that lead to significant business growth. I am proficient in Python, SQL, and various business intelligence tools.
+    I am a postgraduate student at the University of Cambridge pursuing a Master of Advanced Study in Astrophysics. 
+    My academic and research interests are centered on computational cosmology and gravitational wave astronomy. 
+    I have a strong foundation in physics and mathematics, graduating with High Distinction from the University of Toronto.
+
+    My research experience includes developing simulations for 21-cm cosmology with the **Cosmic Dawn Group** at Cambridge, 
+    aiming to support future radio astronomy experiments like the Square Kilometre Array (SKA). I have also worked on probing 
+    neutron star physics using gravitational wave data from the **LIGO Scientific Collaboration** and contributed to the data 
+    analysis pipeline for the **HERA** radio telescope collaboration. I am proficient in Python, MATLAB, and various high-performance 
+    computing tools, with a focus on simulation, Bayesian inference, and data visualization.
     """
 )
 
@@ -84,11 +84,16 @@ repos = fetch_pinned_repos(GITHUB_USERNAME)
 if repos is None:
     st.warning("Could not fetch GitHub projects. Please check the username or try again later.")
 elif not repos:
-    st.info("No pinned repositories found.")
+    st.info(f"No pinned repositories found for user '{GITHUB_USERNAME}'.")
 else:
-    for repo in repos:
-        st.markdown(f"#### [{repo['repo']}]({repo['link']})")
-        st.write(f"⭐ {repo.get('stars', 'N/A')} | 🍴 {repo.get('forks', 'N/A')}")
-        st.write(repo['description'])
-        st.write(f"**Language:** {repo['language']}")
-        st.write("---")
+    # Create a two-column layout for the projects
+    col1, col2 = st.columns(2)
+    for i, repo in enumerate(repos):
+        # Distribute projects between the two columns
+        with col1 if i % 2 == 0 else col2:
+            st.markdown(f"#### [{repo['repo']}]({repo['link']})")
+            st.write(f"⭐ {repo.get('stars', 'N/A')} | 🍴 {repo.get('forks', 'N/A')}")
+            st.write(repo['description'])
+            st.write(f"**Language:** {repo.get('language', 'N/A')}")
+            st.write("---")
+
