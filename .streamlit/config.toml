@@ -3,16 +3,16 @@
 
 [theme]
 # The color of interactive elements like buttons and links
-primaryColor="#d3d3d3"
+primaryColor="#ff4b4b"
 
 # The main background color of the app
-backgroundColor="#0e1117"
+backgroundColor="#ffffff"
 
 # The background color of the sidebar
-secondaryBackgroundColor="#1c1e24"
+secondaryBackgroundColor="#f0f2f6"
 
 # The color of the text
-textColor="#fafafa"
+textColor="#31333F"
 
 # The font for the app
 font="Inter"
