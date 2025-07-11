@@ -22,13 +22,12 @@ st.set_page_config(
 # )
 
 
-# --- LOAD INTER FONT ---
-# This injects the Google Font into the app's HTML head.
+# --- LOAD INTER FONT AND CUSTOM CSS ---
+# This injects the Google Font and custom styles into the app's HTML head.
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
-    </style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');c
     """,
     unsafe_allow_html=True,
 )
