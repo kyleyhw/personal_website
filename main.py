@@ -38,12 +38,10 @@ def fetch_pinned_repos(username):
 
 # --- Sidebar ---
 with st.sidebar:
-    # You'll need to create an 'assets' folder and add your profile picture.
-    # For example: assets/profile-pic.png
     try:
-        st.image("assets/profile-pic.png", width=250)
+        st.image("assets/profile_pic.jpeg", width=250)
     except FileNotFoundError:
-        st.warning("Profile picture not found. Please add 'profile-pic.png' to an 'assets' folder.")
+        st.warning("Profile picture not found. Please add 'profile_pic.jpeg' to an 'assets' folder.")
 
     st.title("Kyle Wong")
     st.write("MASt Astrophysics Student")
