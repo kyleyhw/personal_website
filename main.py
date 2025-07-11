@@ -9,17 +9,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS FOR SIDEBAR WIDTH ---
-st.markdown(
-    """
-    <style>
-    [data-testid="stSidebar"] {
-        width: 400px !important; /* Set the width to your desired value */
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# # --- CSS FOR SIDEBAR WIDTH ---
+# st.markdown(
+#     """
+#     <style>
+#     [data-testid="stSidebar"] {
+#         width: 400px !important; /* Set the width to your desired value */
+#     }
+#     </style>
+#     """,
+#     unsafe_allow_html=True,
+# )
 
 # --- GITHUB AND ASSET SETUP ---
 GITHUB_USERNAME = "kyleyhw"
