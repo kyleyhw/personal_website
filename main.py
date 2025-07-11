@@ -10,8 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- LOAD INTER FONT AND CUSTOM CSS ---
-# This injects the Google Font into the app's HTML head.
+# --- LOAD INTER FONT ---
 st.markdown(
     """
     <style>
@@ -23,76 +22,18 @@ st.markdown(
 
 # --- GITHUB AND ASSET SETUP ---
 GITHUB_USERNAME = "kyleyhw"
-# URL to the CV hosted on GitHub Pages for in-browser viewing
 CV_URL = "https://kyleyhw.github.io/kyle_wong_cv/kyle_wong_cv_mar_2025.pdf"
-# Raw URL to your profile picture on GitHub
 PROFILE_PIC_URL = "https://raw.githubusercontent.com/kyleyhw/personal_website/master/assets/profile_pic.jpeg"
 
 # --- SVG ICONS ---
-# Using inline SVG for icons allows for customization and avoids external dependencies.
-# The fill color is set to black.
 ICON_STYLE = 'style="vertical-align: middle; margin-right: 10px; width: 24px; height: 24px;"'
 SVG_FILL_COLOR = "#000000"
-
 EMAIL_ICON = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{SVG_FILL_COLOR}" {ICON_STYLE}><path d="M0 3v18h24v-18h-24zm21.518 2l-9.518 7.713-9.518-7.713h19.036zm-19.518 14v-11.817l10 8.104 10-8.104v11.817h-20z"/></svg>'
 GITHUB_ICON = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{SVG_FILL_COLOR}" {ICON_STYLE}><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>'
 LINKEDIN_ICON = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{SVG_FILL_COLOR}" {ICON_STYLE}><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>'
 
-
-# --- GITHUB REPO FETCHER ---
-@st.cache_data(ttl=3600)
-def fetch_pinned_repos(username: str, github_token: str):
-    """
-    Fetches pinned repositories using the official GitHub GraphQL API.
-    Requires a Personal Access Token (PAT) for authentication.
-    """
-    api_url = "https://api.github.com/graphql"
-    headers = {"Authorization": f"bearer {github_token}"}
-    query = """
-    query($username: String!) {
-      user(login: $username) {
-        pinnedItems(first: 6, types: REPOSITORY) {
-          nodes {
-            ... on Repository {
-              name
-              description
-              url
-              stargazerCount
-              forkCount
-              primaryLanguage {
-                name
-                color
-              }
-            }
-          }
-        }
-      }
-    }
-    """
-    variables = {"username": username}
-
-    try:
-        response = requests.post(api_url, json={"query": query, "variables": variables}, headers=headers)
-        if response.status_code == 200:
-            response_json = response.json()
-            if "errors" in response_json:
-                st.error(f"GitHub API returned errors: {response_json['errors']}")
-                return None
-            return response_json.get("data", {}).get("user", {}).get("pinnedItems", {}).get("nodes")
-        else:
-            st.error(f"GitHub API error: {response.status_code} - {response.text}")
-            return None
-    except requests.exceptions.RequestException as e:
-        st.error(f"An error occurred while fetching data: {e}")
-        return None
-    except (KeyError, TypeError) as e:
-        st.error(f"Error parsing the response from GitHub. Please check your token and username. Details: {e}")
-        return None
-
-
-# --- SIDEBAR & NAVIGATION ---
+# --- SIDEBAR ---
 with st.sidebar:
-    # Use PIL to open the image from the URL
     try:
         response = requests.get(PROFILE_PIC_URL, stream=True)
         if response.status_code == 200:
@@ -107,11 +48,7 @@ with st.sidebar:
     st.write("MASt Astrophysics Student")
     st.write("University of Cambridge")
 
-    # --- Navigation Menu ---
-    page = st.radio("Navigation", ["Home", "Portfolio", "Research & Skills", "Presentations"])
-
-    st.write("---")
-    st.markdown(f"[View CV]({CV_URL})")
+    st.markdown(f"[View CV]({CV_URL})", unsafe_allow_html=True)
 
     st.write("---")
     st.subheader("Contact")
@@ -120,125 +57,18 @@ with st.sidebar:
     st.markdown(f"{LINKEDIN_ICON} [Kyle Wong](https://www.linkedin.com/in/kyle-wong-a95030281/)",
                 unsafe_allow_html=True)
 
-# --- PAGE CONTENT ---
+# --- HOME PAGE CONTENT ---
+st.title("About Me")
+st.write(
+    """
+    I am a postgraduate student at the University of Cambridge pursuing a Master of Advanced Study in Astrophysics. 
+    My academic and research interests are centered on computational cosmology and gravitational wave astronomy. 
+    I have a strong foundation in physics and mathematics, graduating with High Distinction from the University of Toronto.
 
-if page == "Home":
-    st.title("About Me")
-    st.write(
-        """
-        I am a postgraduate student at the University of Cambridge pursuing a Master of Advanced Study in Astrophysics. 
-        My academic and research interests are centered on computational cosmology and gravitational wave astronomy. 
-        I have a strong foundation in physics and mathematics, graduating with High Distinction from the University of Toronto.
-
-        My research experience includes developing simulations for 21-cm cosmology with the **Cosmic Dawn Group** at Cambridge, 
-        aiming to support future radio astronomy experiments like the Square Kilometre Array (SKA). I have also worked on probing 
-        neutron star physics using gravitational wave data from the **LIGO Scientific Collaboration** and contributed to the data 
-        analysis pipeline for the **HERA** radio telescope collaboration. I am proficient in Python, MATLAB, and various high-performance 
-        computing tools, with a focus on simulation, Bayesian inference, and data visualization.
-        """
-    )
-
-elif page == "Portfolio":
-    st.title("Portfolio")
-    st.subheader("Featured GitHub Projects")
-
-    # Fetch and display repositories
-    if "GITHUB_TOKEN" not in st.secrets:
-        st.error("`GITHUB_TOKEN` not found in Streamlit secrets. Please follow the instructions to add it.")
-    else:
-        github_token = st.secrets["GITHUB_TOKEN"]
-        repos = fetch_pinned_repos(GITHUB_USERNAME, github_token)
-
-        if repos is None:
-            st.warning(
-                "Could not fetch GitHub projects. Please check the app logs or the error messages above for more details.")
-        elif not repos:
-            st.info(
-                f"No pinned repositories found for user '{GITHUB_USERNAME}'. Please ensure you have pinned some repositories on your GitHub profile.")
-        else:
-            # Display each repo in a single-column layout
-            for repo in repos:
-                st.markdown(f"#### [{repo.get('name', 'No name')}]({repo.get('url', '#')})")
-                st.write(repo.get('description', 'No description provided.'))
-                if repo.get('primaryLanguage'):
-                    st.write(f"**Language:** {repo['primaryLanguage']['name']}")
-                st.write("---")
-
-elif page == "Research & Skills":
-    st.title("Research & Skills")
-
-    st.header("Research Experience")
-
-    st.subheader("Master's of Advanced Study Research Project")
-    st.write("*Institute of Astronomy, University of Cambridge (Oct 2024 - Present)*")
-    with st.expander("Details"):
-        st.markdown("""
-        - **Topic:** Implementation and statistical testing of variable initial conditions and resolution in the 21cmSPACE code package for simulating hydrogen gas clouds in the early universe.
-        - **Goal:** To enable efficient forecasting for future radio astronomy experiments, particularly the Square Kilometre Array (SKA).
-        - **Skills:** Simulation, MATLAB, High-Performance Computing, Linux, Data Visualization, Cosmology.
-        """)
-
-    st.subheader("Canadian Institute for Theoretical Astrophysics (CITA) Summer Fellowship")
-    st.write("*University of Toronto (May 2023 - Dec 2023)*")
-    with st.expander("Details"):
-        st.markdown("""
-        - **Topic:** Probing neutron star tidal deformability from gravitational wave signals using Markov Chain Monte Carlo (MCMC) parameter estimation.
-        - **Goal:** Incorporating new models for neutron star equation of state correlations into the LIGO Scientific Collaboration's analysis pipeline.
-        - **Skills:** Simulation, MCMC, Machine Learning, Bayesian Inference, High-Performance Computing, Linux.
-        """)
-
-    st.subheader("McGill Space Institute Summer Research Award")
-    st.write("*McGill University (May 2022 - Apr 2023)*")
-    with st.expander("Details"):
-        st.markdown("""
-        - **Topic:** Incorporating statistical priors into the power spectrum data estimator for the Hydrogen Epoch of Reionization Array (HERA) collaboration.
-        - **Goal:** To improve the analysis of radio astronomy data from HERA's cosmic dawn experiment.
-        - **Skills:** Simulation, Fourier Transform, Radio Astronomy, Python.
-        """)
-
-    st.write("---")
-
-    st.header("Technical Skills")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.subheader("Programming")
-        st.markdown("""
-        - Python
-        - MATLAB
-        - Java
-        - *Emphasis on design, vectorization, and best practices.*
-        """)
-
-    with col2:
-        st.subheader("Data Analysis & Simulation")
-        st.markdown("""
-        - Fast Fourier Transform (FFT)
-        - Numerical Methods (differentiation, integration, root finding)
-        - Monte Carlo Methods
-        - Bayesian Inference
-        """)
-
-    st.subheader("Key Libraries & Software")
-    st.markdown("""
-    - **Bilby:** Extensive use for parameter estimation.
-    - **21cmSPACE:** Cosmological simulation package.
-    - **CAMB & recfast++:** Astrophysical simulation packages.
-    """)
-
-elif page == "Presentations":
-    st.title("Presentations")
-
-    st.markdown("""
-    - **Impact of Variable Cosmology on the 21-cm Cosmic Dawn Signal**
-      - *Master's Project Presentation, University of Cambridge (2025)*
-    - **Interim Progress Presentation**
-      - *Cambridge Cosmic Dawn Group (2024)*
-    - **Estimating Neutron Star Tidal Deformability**
-      - *CITA Undergraduate Research Showcase (2023)*
-    - **PHY478 Physics Project Final Presentation**
-      - *University of Toronto (2023)*
-    - **Two Presentations on Neutron Star Physics**
-      - *CITA Compact Objects Group (2023)*
-    """)
+    My research experience includes developing simulations for 21-cm cosmology with the **Cosmic Dawn Group** at Cambridge, 
+    aiming to support future radio astronomy experiments like the Square Kilometre Array (SKA). I have also worked on probing 
+    neutron star physics using gravitational wave data from the **LIGO Scientific Collaboration** and contributed to the data 
+    analysis pipeline for the **HERA** radio telescope collaboration. I am proficient in Python, MATLAB, and various high-performance 
+    computing tools, with a focus on simulation, Bayesian inference, and data visualization.
+    """
+)
