@@ -17,11 +17,6 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
 
-    [data-testid="stSidebar"] {
-        /* The background color is set to match the secondaryBackgroundColor from the theme, with 80% opacity. */
-        background-color: rgba(28, 30, 36, 0.8) !important;
-    }
-    </style>
     """,
     unsafe_allow_html=True,
 )
