@@ -1,5 +1,8 @@
 import streamlit as st
 
+from load_style import *
+load_font()
+
 # --- PRESENTATIONS PAGE CONTENT ---
 st.title("Presentations")
 
