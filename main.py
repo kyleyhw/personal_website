@@ -10,8 +10,8 @@ st.set_page_config(
 
 # --- GITHUB AND ASSET SETUP ---
 GITHUB_USERNAME = "kyleyhw"
-# Permalink to your CV PDF on GitHub, which opens in the browser
-CV_URL = "https://raw.githubusercontent.com/kyleyhw/kyle_wong_cv/e7d2e8333b1d3c22502dc5a9bcadac1c95cb7251/kyle_wong_cv_mar_2025.pdf"
+# URL to the CV hosted on GitHub Pages for in-browser viewing
+CV_URL = "https://kyleyhw.github.io/kyle_wong_cv/kyle_wong_cv_mar_2025.pdf"
 # Raw URL to your profile picture on GitHub
 PROFILE_PIC_URL = "https://raw.githubusercontent.com/kyleyhw/personal_website/master/assets/profile_pic.jpeg"
 
@@ -88,7 +88,7 @@ else:
         # Distribute projects between the two columns
         with col1 if i % 2 == 0 else col2:
             st.markdown(f"#### [{repo['repo']}]({repo['link']})")
-            st.write(f"⭐ {repo.get('stars', 'N/A')} | � {repo.get('forks', 'N/A')}")
+            st.write(f"⭐ {repo.get('stars', 'N/A')} | 🍴 {repo.get('forks', 'N/A')}")
             st.write(repo['description'])
             st.write(f"**Language:** {repo.get('language', 'N/A')}")
             st.write("---")
