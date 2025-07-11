@@ -155,13 +155,10 @@ else:
         st.info(
             f"No pinned repositories found for user '{GITHUB_USERNAME}'. Please ensure you have pinned some repositories on your GitHub profile.")
     else:
-        # Create a two-column layout for the projects
-        col1, col2 = st.columns(2)
-        for i, repo in enumerate(repos):
-            with col1 if i % 2 == 0 else col2:
-                st.markdown(f"#### [{repo.get('name', 'No name')}]({repo.get('url', '#')})")
-                st.write(f"⭐ {repo.get('stargazerCount', 0)} | 🍴 {repo.get('forkCount', 0)}")
-                st.write(repo.get('description', 'No description provided.'))
-                if repo.get('primaryLanguage'):
-                    st.write(f"**Language:** {repo['primaryLanguage']['name']}")
-                st.write("---")
+        # Display each repo in a single-column layout
+        for repo in repos:
+            st.markdown(f"#### [{repo.get('name', 'No name')}]({repo.get('url', '#')})")
+            st.write(repo.get('description', 'No description provided.'))
+            if repo.get('primaryLanguage'):
+                st.write(f"**Language:** {repo['primaryLanguage']['name']}")
+            st.write("---")
