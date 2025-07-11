@@ -21,7 +21,7 @@ with st.expander(
         "Canadian Institute for Theoretical Astrophysics (CITA) Summer Fellowship | *University of Toronto (May 2023 - Dec 2023)*"):
     st.markdown("""
     - **Topic:** Probing neutron star tidal deformability from gravitational wave signals using Markov Chain Monte Carlo (MCMC) parameter estimation.
-    - **Goal:** Incorporating new models for neutron star equation of state correlations into the LIGO Scientific Collaboration's analysis pipeline.
+    - **Goal:** To incorporate new models for neutron star equation of state correlations into the LIGO Scientific Collaboration's analysis pipeline.
     - **Skills:** Simulation, MCMC, Machine Learning, Bayesian Inference, High-Performance Computing, Linux.
     """)
 
