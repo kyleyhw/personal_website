@@ -5,7 +5,7 @@ from PIL import Image
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Kyle Wong | Astrophysics",
-    page_icon="�",
+    page_icon="🔭",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -17,13 +17,14 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
 
-    /* Style for the project cards - Light Theme */
+    /* Style for the project cards - Using Flexbox for alignment */
     .project-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         gap: 1.5rem;
     }
     .project-card {
+        flex: 1 1 350px; /* Flex-grow, flex-shrink, flex-basis */
         border: 1px solid #d0d7de; /* Light gray border */
         border-radius: 8px;
         padding: 1.5rem;
@@ -32,7 +33,6 @@ st.markdown(
         flex-direction: column;
         justify-content: space-between;
         transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
-        height: 100%; /* Make cards in the same row have the same height */
     }
     .project-card:hover {
         transform: translateY(-5px);
