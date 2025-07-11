@@ -17,22 +17,30 @@ PROFILE_PIC_URL = "https://raw.githubusercontent.com/kyleyhw/personal_website/ma
 
 
 # --- GITHUB REPO FETCHER ---
-# This function fetches your pinned repositories from GitHub.
+# This function fetches your public repositories from the official GitHub API.
 @st.cache_data(ttl=3600)  # Cache the data for 1 hour
-def fetch_pinned_repos(username):
+def fetch_github_repos(username):
     """
-    Fetches pinned repositories for a given GitHub username.
-    Uses an external proxy as the official GitHub GraphQL API is more complex for this use case.
+    Fetches public repositories for a given GitHub username using the official GitHub API,
+    sorted by stars.
     """
+    url = f"https://api.github.com/users/{username}/repos?sort=stars&per_page=6"
     try:
-        response = requests.get(f"https://gh-pinned-repos.egoist.dev/?username={username}")
+        response = requests.get(url)
         if response.status_code == 200:
-            return response.json()
+            try:
+                # Sort repositories by stars in descending order and take the top 6
+                repos = response.json()
+                repos.sort(key=lambda r: r.get('stargazers_count', 0), reverse=True)
+                return repos[:6]
+            except requests.exceptions.JSONDecodeError:
+                st.error("Failed to parse the response from the GitHub API.")
+                return None
         else:
-            st.error(f"Failed to fetch GitHub repos. Status code: {response.status_code}")
-            return []
+            st.error(f"GitHub API returned status code {response.status_code}.")
+            return None
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching GitHub repos: {e}")
+        st.error(f"An error occurred while fetching data: {e}")
         return None
 
 
@@ -72,23 +80,31 @@ st.write("---")
 
 # --- Portfolio Section ---
 st.header("Portfolio")
-st.subheader("Pinned GitHub Projects")
+st.subheader("Featured GitHub Projects")
 
 # Fetch and display repositories
-repos = fetch_pinned_repos(GITHUB_USERNAME)
+repos = fetch_github_repos(GITHUB_USERNAME)
 
 if repos is None:
-    st.warning("Could not fetch GitHub projects. Please check the username or try again later.")
+    st.warning("Could not fetch GitHub projects at the moment. This may be a temporary issue. Please try again later.")
 elif not repos:
-    st.info(f"No pinned repositories found for user '{GITHUB_USERNAME}'.")
+    st.info(f"No public repositories found for user '{GITHUB_USERNAME}'.")
 else:
     # Create a two-column layout for the projects
     col1, col2 = st.columns(2)
     for i, repo in enumerate(repos):
+        # Use .get() for all keys to prevent errors if a key is missing from the API response
+        repo_name = repo.get('name', 'No name')
+        repo_link = repo.get('html_url', '#')
+        repo_desc = repo.get('description', 'No description provided.')
+        repo_lang = repo.get('language', 'N/A')
+        repo_stars = repo.get('stargazers_count', 0)
+        repo_forks = repo.get('forks_count', 0)
+
         # Distribute projects between the two columns
         with col1 if i % 2 == 0 else col2:
-            st.markdown(f"#### [{repo['repo']}]({repo['link']})")
-            st.write(f"⭐ {repo.get('stars', 'N/A')} | 🍴 {repo.get('forks', 'N/A')}")
-            st.write(repo['description'])
-            st.write(f"**Language:** {repo.get('language', 'N/A')}")
+            st.markdown(f"#### [{repo_name}]({repo_link})")
+            st.write(f"⭐ {repo_stars} | 🍴 {repo_forks}")
+            st.write(repo_desc)
+            st.write(f"**Language:** {repo_lang}")
             st.write("---")
