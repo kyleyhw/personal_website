@@ -1,0 +1,18 @@
+# This file should be placed in a folder named ".streamlit" in your project's root directory.
+# .streamlit/config.toml
+
+[theme]
+# The color of interactive elements like buttons and links
+primaryColor="#d3d3d3"
+
+# The main background color of the app
+backgroundColor="#0e1117"
+
+# The background color of the sidebar
+secondaryBackgroundColor="#1c1e24"
+
+# The color of the text
+textColor="#fafafa"
+
+# The font for the app
+font="sans serif"
