@@ -85,8 +85,6 @@ def fetch_pinned_repos(username: str, github_token: str):
               name
               description
               url
-              stargazerCount
-              forkCount
               primaryLanguage {
                 name
                 color
