@@ -1,66 +1,85 @@
 import streamlit as st
+import requests
+from utils import load_font
 
-# --- LOAD INTER FONT ---
-st.markdown(
+# Load the custom font
+load_font()
+
+# --- GITHUB AND ASSET SETUP ---
+GITHUB_USERNAME = "kyleyhw"
+
+
+# --- GITHUB REPO FETCHER ---
+@st.cache_data(ttl=3600)
+def fetch_pinned_repos(username: str, github_token: str):
     """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+    Fetches pinned repositories using the official GitHub GraphQL API.
+    Requires a Personal Access Token (PAT) for authentication.
+    """
+    api_url = "https://api.github.com/graphql"
+    headers = {"Authorization": f"bearer {github_token}"}
+    query = """
+    query($username: String!) {
+      user(login: $username) {
+        pinnedItems(first: 6, types: REPOSITORY) {
+          nodes {
+            ... on Repository {
+              name
+              description
+              url
+              stargazerCount
+              forkCount
+              primaryLanguage {
+                name
+                color
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+    variables = {"username": username}
 
-# --- RESEARCH & SKILLS PAGE CONTENT ---
-st.title("research experience")
+    try:
+        response = requests.post(api_url, json={"query": query, "variables": variables}, headers=headers)
+        if response.status_code == 200:
+            response_json = response.json()
+            if "errors" in response_json:
+                st.error(f"GitHub API returned errors: {response_json['errors']}")
+                return None
+            return response_json.get("data", {}).get("user", {}).get("pinnedItems", {}).get("nodes")
+        else:
+            st.error(f"GitHub API error: {response.status_code} - {response.text}")
+            return None
+    except requests.exceptions.RequestException as e:
+        st.error(f"An error occurred while fetching data: {e}")
+        return None
+    except (KeyError, TypeError) as e:
+        st.error(f"Error parsing the response from GitHub. Please check your token and username. Details: {e}")
+        return None
 
-st.header("research projects")
 
-with st.expander(
-        "Master's of Advanced Study Research Project | *Institute of Astronomy, University of Cambridge (Oct 2024 - Present)*"):
-    st.markdown("""
-    - **Topic:** Implementation and statistical testing of variable initial conditions and resolution in the 21cmSPACE code package for simulating hydrogen gas clouds in the early universe.
-    - **Goal:** To enable efficient forecasting for future radio astronomy experiments, particularly the Square Kilometre Array (SKA).
-    - **Skills:** Simulation, MATLAB, High-Performance Computing, Linux, Data Visualization, Cosmology.
-    """)
+# --- PORTFOLIO PAGE CONTENT ---
+st.title("featured projects")
+st.subheader("a selection of my pinned GitHub repositories.")
 
-with st.expander(
-        "Canadian Institute for Theoretical Astrophysics (CITA) Summer Fellowship | *University of Toronto (May 2023 - Dec 2023)*"):
-    st.markdown("""
-    - **Topic:** Probing neutron star tidal deformability from gravitational wave signals using Markov Chain Monte Carlo (MCMC) parameter estimation.
-    - **Goal:** Incorporating new models for neutron star equation of state correlations into the LIGO Scientific Collaboration's analysis pipeline.
-    - **Skills:** Simulation, MCMC, Machine Learning, Bayesian Inference, High-Performance Computing, Linux.
-    """)
+if "GITHUB_TOKEN" not in st.secrets:
+    st.error("`GITHUB_TOKEN` not found in Streamlit secrets. Please follow the instructions to add it.")
+else:
+    github_token = st.secrets["GITHUB_TOKEN"]
+    repos = fetch_pinned_repos(GITHUB_USERNAME, github_token)
 
-with st.expander("McGill Space Institute Summer Research Award | *McGill University (May 2022 - Apr 2023)*"):
-    st.markdown("""
-    - **Topic:** Incorporating statistical priors into the power spectrum data estimator for the Hydrogen Epoch of Reionization Array (HERA) collaboration.
-    - **Goal:** To improve the analysis of radio astronomy data from HERA's cosmic dawn experiment.
-    - **Skills:** Simulation, Fourier Transform, Radio Astronomy, Python.
-    """)
-
-st.write("---")
-
-st.header("technical skills")
-
-st.subheader("programming")
-st.markdown("""
-- Python
-- MATLAB
-- Java
-- *Emphasis on design, vectorization, and best practices.*
-""")
-
-st.subheader("data analysis & simulation")
-st.markdown("""
-- Fast Fourier Transform (FFT)
-- Numerical Methods (differentiation, integration, root finding)
-- Monte Carlo Methods
-- Bayesian Inference
-""")
-
-st.subheader("key libraries & software")
-st.markdown("""
-- **Bilby:** Extensive use for parameter estimation.
-- **21cmSPACE:** Cosmological simulation package.
-- **CAMB & recfast++:** Astrophysical simulation packages.
-""")
+    if repos is None:
+        st.warning(
+            "Could not fetch GitHub projects. Please check the app logs or the error messages above for more details.")
+    elif not repos:
+        st.info(
+            f"No pinned repositories found for user '{GITHUB_USERNAME}'. Please ensure you have pinned some repositories on your GitHub profile.")
+    else:
+        for repo in repos:
+            st.markdown(f"#### [{repo.get('name', 'No name')}]({repo.get('url', '#')})")
+            st.write(repo.get('description', 'No description provided.'))
+            if repo.get('primaryLanguage'):
+                st.write(f"**Language:** {repo['primaryLanguage']['name']}")
+            st.write("---")

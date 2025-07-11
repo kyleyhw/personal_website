@@ -1,14 +1,8 @@
 import streamlit as st
+from utils import load_font
 
-# --- LOAD INTER FONT ---
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# Load the custom font
+load_font()
 
 # --- RESEARCH & SKILLS PAGE CONTENT ---
 st.title("research experience")
@@ -42,25 +36,21 @@ st.write("---")
 
 st.header("technical skills")
 
-col1, col2 = st.columns(2)
+st.subheader("programming")
+st.markdown("""
+- Python
+- MATLAB
+- Java
+- *Emphasis on design, vectorization, and best practices.*
+""")
 
-with col1:
-    st.subheader("programming")
-    st.markdown("""
-    - Python
-    - MATLAB
-    - Java
-    - *Emphasis on design, vectorization, and best practices.*
-    """)
-
-with col2:
-    st.subheader("data analysis & simulation")
-    st.markdown("""
-    - Fast Fourier Transform (FFT)
-    - Numerical Methods (differentiation, integration, root finding)
-    - Monte Carlo Methods
-    - Bayesian Inference
-    """)
+st.subheader("data analysis & simulation")
+st.markdown("""
+- Fast Fourier Transform (FFT)
+- Numerical Methods (differentiation, integration, root finding)
+- Monte Carlo Methods
+- Bayesian Inference
+""")
 
 st.subheader("key libraries & software")
 st.markdown("""

@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 from PIL import Image
+from utils import load_font
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -10,17 +11,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- LOAD INTER FONT ---
-from load_style import *
+# Load the custom font
 load_font()
-# st.markdown(
-#     """
-#     <style>
-#     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
-#     </style>
-#     """,
-#     unsafe_allow_html=True,
-# )
 
 # --- GITHUB AND ASSET SETUP ---
 GITHUB_USERNAME = "kyleyhw"
@@ -46,21 +38,21 @@ with st.sidebar:
     except Exception as e:
         st.warning(f"Error loading profile picture: {e}")
 
-    st.title("Kyle Wong")
+    st.title("kyle wong")
     st.write("MASt Astrophysics Student")
     st.write("University of Cambridge")
 
     st.markdown(f"[View CV]({CV_URL})", unsafe_allow_html=True)
 
     st.write("---")
-    st.subheader("Contact")
+    st.subheader("contact")
     st.markdown(f"{EMAIL_ICON} [kyhw2@cam.ac.uk](mailto:kyhw2@cam.ac.uk)", unsafe_allow_html=True)
     st.markdown(f"{GITHUB_ICON} [kyleyhw](https://github.com/{GITHUB_USERNAME})", unsafe_allow_html=True)
     st.markdown(f"{LINKEDIN_ICON} [Kyle Wong](https://www.linkedin.com/in/kyle-wong-a95030281/)",
                 unsafe_allow_html=True)
 
 # --- HOME PAGE CONTENT ---
-st.title("About Me")
+st.title("about me")
 st.write(
     """
     I am a postgraduate student at the University of Cambridge pursuing a Master of Advanced Study in Astrophysics. 
