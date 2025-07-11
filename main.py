@@ -57,7 +57,7 @@ st.write(
     """
     I am a postgraduate student at the University of Cambridge pursuing a Master of Advanced Study in Astrophysics. 
     My academic and research interests are centered on computational cosmology and gravitational wave astronomy. 
-    I have a strong foundation in physics and mathematics, graduating with High Distinction from the University of Toronto.
+    I have a strong foundation in physics and mathematics, graduating with an Honours Bachelor of Science from the University of Toronto.
 
     My research experience includes developing simulations for 21-cm cosmology with the **Cosmic Dawn Group** at Cambridge, 
     aiming to support future radio astronomy experiments like the Square Kilometre Array (SKA). I have also worked on probing 
