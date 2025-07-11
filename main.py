@@ -4,8 +4,8 @@ import requests
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Kyle Wong | Astrophysics",
-    page_icon="🔭",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # --- GITHUB AND ASSET SETUP ---
@@ -51,20 +51,13 @@ with st.sidebar:
     st.write("MASt Astrophysics Student")
     st.write("University of Cambridge")
 
-    st.markdown(f"📄 [View CV]({CV_URL})")
+    st.markdown(f"[View CV]({CV_URL})")
 
     st.write("---")
     st.subheader("Contact")
-    st.write(f"[Email: kyhw2@cam.ac.uk](kyhw2@cam.ac.uk)")
+    st.write(f"[Email: kyhw2@cam.ac.uk](mailto:kyhw2@cam.ac.uk)")
     st.write(f"[GitHub: kyleyhw](https://github.com/{GITHUB_USERNAME})")
     st.write(f"[LinkedIn: Kyle Wong](https://www.linkedin.com/in/kyle-wong-a95030281/)")
-
-    st.write("---")
-    st.subheader("Troubleshooting")
-    if st.button("Clear Cache"):
-        st.cache_data.clear()
-        st.success("Cache cleared. Please refresh the page.")
-    st.caption("If projects aren't showing, try clearing the cache and refreshing.")
 
 # --- Main Page ---
 st.title("About Me")
@@ -110,7 +103,7 @@ else:
         # Distribute projects between the two columns
         with col1 if i % 2 == 0 else col2:
             st.markdown(f"#### [{repo_name}]({repo_link})")
-            st.write(f"⭐ {repo_stars} | 🍴 {repo_forks}")
+            st.write(f"Stars: {repo_stars} | Forks: {repo_forks}")
             st.write(repo_desc)
             st.write(f"**Language:** {repo_lang}")
             st.write("---")
