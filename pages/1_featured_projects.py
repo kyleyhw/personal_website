@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import html
 from utils import load_font
 
 # Load the custom font
@@ -139,7 +140,8 @@ else:
         for repo in repos:
             repo_name = repo.get('name', 'No name')
             repo_url = repo.get('url', '#')
-            description = repo.get('description', 'No description provided.')
+            # Escape the description to prevent HTML injection issues
+            description = html.escape(repo.get('description', 'No description provided.'))
             stargazers_count = repo.get('stargazerCount', 0)
             forks_count = repo.get('forkCount', 0)
 
@@ -157,7 +159,7 @@ else:
                 </div>
                 <div class="project-footer">
                     <span class="lang-color-dot" style="background-color:{lang_color};"></span> {lang_name}
-                    <span style="margin-left: auto;">⭐ {stargazers_count} | 🍴 {forks_count}</span>
+                    <span style="margin-left: auto;">★ {stargazers_count}</span>
                 </div>
             </div>
             """
