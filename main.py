@@ -38,7 +38,7 @@ with st.sidebar:
     except Exception as e:
         st.warning(f"Error loading profile picture: {e}")
 
-    st.title("kyle wong")
+    st.title("Kyle Wong")
     st.write("MASt Astrophysics Student")
     st.write("University of Cambridge")
 
