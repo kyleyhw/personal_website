@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-from pathlib import Path # <-- Import the Path object
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -9,10 +8,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- GITHUB AND CV SETUP ---
+# --- GITHUB AND ASSET SETUP ---
 GITHUB_USERNAME = "kyleyhw"
-# The permalink to your CV PDF on GitHub.
+# Permalink to your CV PDF on GitHub
 CV_URL = "https://github.com/kyleyhw/kyle_wong_cv/blob/e7d2e8333b1d3c22502dc5a9bcadac1c95cb7251/kyle_wong_cv_mar_2025.pdf?raw=true"
+# Raw URL to your profile picture on GitHub
+PROFILE_PIC_URL = "https://raw.githubusercontent.com/kyleyhw/personal_website/master/assets/profile_pic.jpeg"
 
 
 # --- GITHUB REPO FETCHER ---
@@ -39,16 +40,7 @@ def fetch_pinned_repos(username):
 
 # --- Sidebar ---
 with st.sidebar:
-    # --- Profile Image ---
-    # Construct the path relative to the script file
-    current_dir = Path(__file__).parent if "__file__" in locals() else Path.cwd()
-    profile_pic_path = current_dir / "assets" / "profile_pic.jpeg"
-
-    if profile_pic_path.exists():
-        st.image(str(profile_pic_path), width=250)
-    else:
-        st.warning("Profile picture not found at assets/profile_pic.jpeg")
-
+    st.image(PROFILE_PIC_URL, width=250)
     st.title("Kyle Wong")
     st.write("MASt Astrophysics Student")
     st.write("University of Cambridge")
@@ -100,4 +92,3 @@ else:
             st.write(repo['description'])
             st.write(f"**Language:** {repo.get('language', 'N/A')}")
             st.write("---")
-
