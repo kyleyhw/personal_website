@@ -4,6 +4,7 @@ import requests
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Kyle Wong | Astrophysics",
+    page_icon="🔭",
     layout="wide",
     initial_sidebar_state="expanded"
 )
