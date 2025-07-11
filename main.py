@@ -22,6 +22,18 @@ st.set_page_config(
 # )
 
 
+# --- LOAD INTER FONT ---
+# This injects the Google Font into the app's HTML head.
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
 # --- GITHUB AND ASSET SETUP ---
 GITHUB_USERNAME = "kyleyhw"
 # URL to the CV hosted on GitHub Pages for in-browser viewing
