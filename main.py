@@ -17,27 +17,25 @@ PROFILE_PIC_URL = "https://raw.githubusercontent.com/kyleyhw/personal_website/ma
 
 
 # --- GITHUB REPO FETCHER ---
-# This function fetches your public repositories from the official GitHub API.
+# This function fetches your pinned repositories from GitHub.
 @st.cache_data(ttl=3600)  # Cache the data for 1 hour
-def fetch_github_repos(username):
+def fetch_pinned_repos(username):
     """
-    Fetches public repositories for a given GitHub username using the official GitHub API,
-    sorted by stars.
+    Fetches pinned repositories for a given GitHub username.
+    Uses an external proxy as the official GitHub GraphQL API is more complex for this use case.
+    This version includes more robust error handling.
     """
-    url = f"https://api.github.com/users/{username}/repos?sort=stars&per_page=6"
+    url = f"https://gh-pinned-repos.egoist.dev/?username={username}"
     try:
         response = requests.get(url)
         if response.status_code == 200:
             try:
-                # Sort repositories by stars in descending order and take the top 6
-                repos = response.json()
-                repos.sort(key=lambda r: r.get('stargazers_count', 0), reverse=True)
-                return repos[:6]
+                return response.json()
             except requests.exceptions.JSONDecodeError:
-                st.error("Failed to parse the response from the GitHub API.")
+                st.error("Failed to parse the response from the GitHub pinned repos API.")
                 return None
         else:
-            st.error(f"GitHub API returned status code {response.status_code}.")
+            st.error(f"GitHub pinned repos API returned status code {response.status_code}.")
             return None
     except requests.exceptions.RequestException as e:
         st.error(f"An error occurred while fetching data: {e}")
@@ -57,8 +55,16 @@ with st.sidebar:
 
     st.write("---")
     st.subheader("Contact")
-    st.write(f"📫 kyhw2@cam.ac.uk")
-    st.write(f"🐙 [GitHub Profile](https://github.com/{GITHUB_USERNAME})")
+    st.write(f"[Email: kyhw2@cam.ac.uk](kyhw2@cam.ac.uk)")
+    st.write(f"[GitHub: kyleyhw](https://github.com/{GITHUB_USERNAME})")
+    st.write(f"[LinkedIn: Kyle Wong](https://www.linkedin.com/in/kyle-wong-a95030281/)")
+
+    st.write("---")
+    st.subheader("Troubleshooting")
+    if st.button("Clear Cache"):
+        st.cache_data.clear()
+        st.success("Cache cleared. Please refresh the page.")
+    st.caption("If projects aren't showing, try clearing the cache and refreshing.")
 
 # --- Main Page ---
 st.title("About Me")
@@ -80,26 +86,26 @@ st.write("---")
 
 # --- Portfolio Section ---
 st.header("Portfolio")
-st.subheader("Featured GitHub Projects")
+st.subheader("Pinned GitHub Projects")
 
 # Fetch and display repositories
-repos = fetch_github_repos(GITHUB_USERNAME)
+repos = fetch_pinned_repos(GITHUB_USERNAME)
 
 if repos is None:
     st.warning("Could not fetch GitHub projects at the moment. This may be a temporary issue. Please try again later.")
 elif not repos:
-    st.info(f"No public repositories found for user '{GITHUB_USERNAME}'.")
+    st.info(f"No pinned repositories found for user '{GITHUB_USERNAME}'.")
 else:
     # Create a two-column layout for the projects
     col1, col2 = st.columns(2)
     for i, repo in enumerate(repos):
         # Use .get() for all keys to prevent errors if a key is missing from the API response
-        repo_name = repo.get('name', 'No name')
-        repo_link = repo.get('html_url', '#')
+        repo_name = repo.get('repo', 'No name')
+        repo_link = repo.get('link', '#')
         repo_desc = repo.get('description', 'No description provided.')
         repo_lang = repo.get('language', 'N/A')
-        repo_stars = repo.get('stargazers_count', 0)
-        repo_forks = repo.get('forks_count', 0)
+        repo_stars = repo.get('stars', 'N/A')
+        repo_forks = repo.get('forks', 'N/A')
 
         # Distribute projects between the two columns
         with col1 if i % 2 == 0 else col2:
