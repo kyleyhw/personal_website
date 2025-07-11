@@ -1,10 +1,17 @@
 import streamlit as st
 
-from load_style import *
-load_font()
+# --- LOAD INTER FONT ---
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # --- PRESENTATIONS PAGE CONTENT ---
-st.title("Presentations")
+st.title("presentations")
 
 st.markdown("""
 - **Impact of Variable Cosmology on the 21-cm Cosmic Dawn Signal**
