@@ -90,9 +90,7 @@ def fetch_pinned_repos(username: str, github_token: str):
         return None
 
 
-# --- SIDEBAR & MAIN CONTENT ---
-
-# --- Sidebar ---
+# --- SIDEBAR & NAVIGATION ---
 with st.sidebar:
     # Use PIL to open the image from the URL
     try:
@@ -109,6 +107,10 @@ with st.sidebar:
     st.write("MASt Astrophysics Student")
     st.write("University of Cambridge")
 
+    # --- Navigation Menu ---
+    page = st.radio("Navigation", ["Home", "Portfolio", "Research & Skills", "Presentations"])
+
+    st.write("---")
     st.markdown(f"[View CV]({CV_URL})")
 
     st.write("---")
@@ -118,47 +120,125 @@ with st.sidebar:
     st.markdown(f"{LINKEDIN_ICON} [Kyle Wong](https://www.linkedin.com/in/kyle-wong-a95030281/)",
                 unsafe_allow_html=True)
 
-# --- Main Page ---
-st.title("About Me")
-st.write(
-    """
-    I am a postgraduate student at the University of Cambridge pursuing a Master of Advanced Study in Astrophysics. 
-    My academic and research interests are centered on computational cosmology and gravitational wave astronomy. 
-    I have a strong foundation in physics and mathematics, graduating with High Distinction from the University of Toronto.
+# --- PAGE CONTENT ---
 
-    My research experience includes developing simulations for 21-cm cosmology with the **Cosmic Dawn Group** at Cambridge, 
-    aiming to support future radio astronomy experiments like the Square Kilometre Array (SKA). I have also worked on probing 
-    neutron star physics using gravitational wave data from the **LIGO Scientific Collaboration** and contributed to the data 
-    analysis pipeline for the **HERA** radio telescope collaboration. I am proficient in Python, MATLAB, and various high-performance 
-    computing tools, with a focus on simulation, Bayesian inference, and data visualization.
-    """
-)
+if page == "Home":
+    st.title("About Me")
+    st.write(
+        """
+        I am a postgraduate student at the University of Cambridge pursuing a Master of Advanced Study in Astrophysics. 
+        My academic and research interests are centered on computational cosmology and gravitational wave astronomy. 
+        I have a strong foundation in physics and mathematics, graduating with High Distinction from the University of Toronto.
 
-st.write("---")
+        My research experience includes developing simulations for 21-cm cosmology with the **Cosmic Dawn Group** at Cambridge, 
+        aiming to support future radio astronomy experiments like the Square Kilometre Array (SKA). I have also worked on probing 
+        neutron star physics using gravitational wave data from the **LIGO Scientific Collaboration** and contributed to the data 
+        analysis pipeline for the **HERA** radio telescope collaboration. I am proficient in Python, MATLAB, and various high-performance 
+        computing tools, with a focus on simulation, Bayesian inference, and data visualization.
+        """
+    )
 
-# --- Portfolio Section ---
-st.header("Portfolio")
-st.subheader("Featured GitHub Projects")
+elif page == "Portfolio":
+    st.title("Portfolio")
+    st.subheader("Featured GitHub Projects")
 
-# Fetch and display repositories
-# First, try to get the token from Streamlit's secrets
-if "GITHUB_TOKEN" not in st.secrets:
-    st.error("`GITHUB_TOKEN` not found in Streamlit secrets. Please follow the instructions to add it.")
-else:
-    github_token = st.secrets["GITHUB_TOKEN"]
-    repos = fetch_pinned_repos(GITHUB_USERNAME, github_token)
-
-    if repos is None:
-        st.warning(
-            "Could not fetch GitHub projects. Please check the app logs or the error messages above for more details.")
-    elif not repos:
-        st.info(
-            f"No pinned repositories found for user '{GITHUB_USERNAME}'. Please ensure you have pinned some repositories on your GitHub profile.")
+    # Fetch and display repositories
+    if "GITHUB_TOKEN" not in st.secrets:
+        st.error("`GITHUB_TOKEN` not found in Streamlit secrets. Please follow the instructions to add it.")
     else:
-        # Display each repo in a single-column layout
-        for repo in repos:
-            st.markdown(f"#### [{repo.get('name', 'No name')}]({repo.get('url', '#')})")
-            st.write(repo.get('description', 'No description provided.'))
-            if repo.get('primaryLanguage'):
-                st.write(f"**Language:** {repo['primaryLanguage']['name']}")
-            st.write("---")
+        github_token = st.secrets["GITHUB_TOKEN"]
+        repos = fetch_pinned_repos(GITHUB_USERNAME, github_token)
+
+        if repos is None:
+            st.warning(
+                "Could not fetch GitHub projects. Please check the app logs or the error messages above for more details.")
+        elif not repos:
+            st.info(
+                f"No pinned repositories found for user '{GITHUB_USERNAME}'. Please ensure you have pinned some repositories on your GitHub profile.")
+        else:
+            # Display each repo in a single-column layout
+            for repo in repos:
+                st.markdown(f"#### [{repo.get('name', 'No name')}]({repo.get('url', '#')})")
+                st.write(repo.get('description', 'No description provided.'))
+                if repo.get('primaryLanguage'):
+                    st.write(f"**Language:** {repo['primaryLanguage']['name']}")
+                st.write("---")
+
+elif page == "Research & Skills":
+    st.title("Research & Skills")
+
+    st.header("Research Experience")
+
+    st.subheader("Master's of Advanced Study Research Project")
+    st.write("*Institute of Astronomy, University of Cambridge (Oct 2024 - Present)*")
+    with st.expander("Details"):
+        st.markdown("""
+        - **Topic:** Implementation and statistical testing of variable initial conditions and resolution in the 21cmSPACE code package for simulating hydrogen gas clouds in the early universe.
+        - **Goal:** To enable efficient forecasting for future radio astronomy experiments, particularly the Square Kilometre Array (SKA).
+        - **Skills:** Simulation, MATLAB, High-Performance Computing, Linux, Data Visualization, Cosmology.
+        """)
+
+    st.subheader("Canadian Institute for Theoretical Astrophysics (CITA) Summer Fellowship")
+    st.write("*University of Toronto (May 2023 - Dec 2023)*")
+    with st.expander("Details"):
+        st.markdown("""
+        - **Topic:** Probing neutron star tidal deformability from gravitational wave signals using Markov Chain Monte Carlo (MCMC) parameter estimation.
+        - **Goal:** Incorporating new models for neutron star equation of state correlations into the LIGO Scientific Collaboration's analysis pipeline.
+        - **Skills:** Simulation, MCMC, Machine Learning, Bayesian Inference, High-Performance Computing, Linux.
+        """)
+
+    st.subheader("McGill Space Institute Summer Research Award")
+    st.write("*McGill University (May 2022 - Apr 2023)*")
+    with st.expander("Details"):
+        st.markdown("""
+        - **Topic:** Incorporating statistical priors into the power spectrum data estimator for the Hydrogen Epoch of Reionization Array (HERA) collaboration.
+        - **Goal:** To improve the analysis of radio astronomy data from HERA's cosmic dawn experiment.
+        - **Skills:** Simulation, Fourier Transform, Radio Astronomy, Python.
+        """)
+
+    st.write("---")
+
+    st.header("Technical Skills")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Programming")
+        st.markdown("""
+        - Python
+        - MATLAB
+        - Java
+        - *Emphasis on design, vectorization, and best practices.*
+        """)
+
+    with col2:
+        st.subheader("Data Analysis & Simulation")
+        st.markdown("""
+        - Fast Fourier Transform (FFT)
+        - Numerical Methods (differentiation, integration, root finding)
+        - Monte Carlo Methods
+        - Bayesian Inference
+        """)
+
+    st.subheader("Key Libraries & Software")
+    st.markdown("""
+    - **Bilby:** Extensive use for parameter estimation.
+    - **21cmSPACE:** Cosmological simulation package.
+    - **CAMB & recfast++:** Astrophysical simulation packages.
+    """)
+
+elif page == "Presentations":
+    st.title("Presentations")
+
+    st.markdown("""
+    - **Impact of Variable Cosmology on the 21-cm Cosmic Dawn Signal**
+      - *Master's Project Presentation, University of Cambridge (2025)*
+    - **Interim Progress Presentation**
+      - *Cambridge Cosmic Dawn Group (2024)*
+    - **Estimating Neutron Star Tidal Deformability**
+      - *CITA Undergraduate Research Showcase (2023)*
+    - **PHY478 Physics Project Final Presentation**
+      - *University of Toronto (2023)*
+    - **Two Presentations on Neutron Star Physics**
+      - *CITA Compact Objects Group (2023)*
+    """)
