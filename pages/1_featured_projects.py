@@ -10,14 +10,17 @@ load_font()
 st.markdown(
     """
     <style>
-    /* Style for the project cards - Using Flexbox for alignment */
+# --- LOAD CUSTOM CSS FOR PROJECT CARDS ---
+st.markdown(
+    """
+    <style>
+    /* Style for the project cards - Using CSS Grid for consistent height */
     .project-grid {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 1.5rem;
     }
     .project-card {
-        flex: 1 1 350px; /* Flex-grow, flex-shrink, flex-basis */
         border: 1px solid #d0d7de; /* Light gray border */
         border-radius: 8px;
         padding: 1.5rem;
@@ -26,6 +29,7 @@ st.markdown(
         flex-direction: column;
         justify-content: space-between;
         transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+        height: 100%; /* Fill the grid cell */
     }
     .project-card:hover {
         transform: translateY(-5px);
@@ -65,15 +69,16 @@ st.markdown(
 
 
 @st.cache_data(ttl=3600)
-def fetch_pinned_repos(username):
+def fetch_repos(username, repo_whitelist):
     """
-    Fetches pinned repositories from the public GitHub profile page.
+    Fetches specific repositories from the public GitHub profile 'Repositories' tab.
     No API token required.
     """
-    url = f"https://github.com/{username}"
+    url = f"https://github.com/{username}?tab=repositories"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
+    
     try:
         response = requests.get(url, headers=headers)
         if response.status_code != 200:
@@ -81,19 +86,33 @@ def fetch_pinned_repos(username):
             return None
 
         soup = BeautifulSoup(response.text, "html.parser")
-        pinned_items = soup.find_all("div", class_="pinned-item-list-item-content")
+        # Find all repo list items
+        repo_list = soup.find("div", id="user-repositories-list")
+        if not repo_list:
+             # Fallback if ID changes or not found
+            items = soup.find_all("li", itemprop="owns")
+        else:
+            items = repo_list.find_all("li")
 
-        repos = []
-        for item in pinned_items:
+        repos_data = []
+        
+        # Helper to normalize names for comparison
+        whitelist_set = {r.lower() for r in repo_whitelist}
+
+        for item in items:
             # Repo Name and URL
-            repo_link = item.find("a", class_="Link")
+            repo_link = item.find("a", itemprop="name codeRepository")
             if not repo_link:
                 continue
+                
             name = repo_link.get_text(strip=True)
+            if name.lower() not in whitelist_set:
+                continue
+
             project_url = f"https://github.com{repo_link['href']}"
 
-            # Description
-            desc_tag = item.find("p", class_="pinned-item-desc")
+            # Description (prop="description")
+            desc_tag = item.find("p", itemprop="description")
             description = desc_tag.get_text(strip=True) if desc_tag else "No description available."
 
             # Language and Color
@@ -103,14 +122,18 @@ def fetch_pinned_repos(username):
             color_tag = item.find("span", class_="repo-language-color")
             color = color_tag["style"].split("background-color:")[1].strip().rstrip(";") if color_tag else "#808080"
 
-            repos.append({
+            repos_data.append({
                 "name": name,
                 "url": project_url,
                 "description": description,
                 "language": lang,
                 "color": color
             })
-        return repos
+            
+        # Sort repos based on the order in the whitelist
+        repos_data.sort(key=lambda x: repo_whitelist.index(x['name']) if x['name'] in repo_whitelist else 999)
+        
+        return repos_data
 
     except Exception as e:
         st.error(f"Error scraping GitHub: {e}")
@@ -119,13 +142,22 @@ def fetch_pinned_repos(username):
 
 # --- PORTFOLIO PAGE CONTENT ---
 st.title("featured code repositories")
-st.subheader("a selection of my pinned GitHub repositories.")
+st.subheader("a selection of my GitHub repositories.")
 
 GITHUB_USERNAME = "kyleyhw"
-projects = fetch_pinned_repos(GITHUB_USERNAME)
+REPO_NAMES = [
+    "quant_core",
+    "sound_simulation",
+    "double_pendulum_stabilization",
+    "digit_recognition",
+    "tracing_turing_machines",
+    "mast_project_final_report"
+]
+
+projects = fetch_repos(GITHUB_USERNAME, REPO_NAMES)
 
 if not projects:
-    st.info("No pinned repositories found or could not connect to GitHub. Please check your internet connection.")
+    st.info("No repositories found. Please check your internet connection or the repository list.")
 else:
     # Generate HTML for the project cards
     project_cards_html = ""
@@ -133,7 +165,7 @@ else:
         repo_name = repo['name']
         repo_url = repo['url']
         description = repo['description']
-        # skills = repo.get('skills', '') # Scraper doesn't get skills metadata unless in README, stripping for now
+        # skills = repo.get('skills', '') 
         lang_name = repo['language']
         lang_color = repo['color']
 
