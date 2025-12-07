@@ -10,10 +10,6 @@ load_font()
 st.markdown(
     """
     <style>
-# --- LOAD CUSTOM CSS FOR PROJECT CARDS ---
-st.markdown(
-    """
-    <style>
     /* Style for the project cards - Using CSS Grid for consistent height */
     .project-grid {
         display: grid;
