@@ -10,13 +10,14 @@ load_font()
 st.markdown(
     """
     <style>
-    /* Style for the project cards - Using CSS Grid for consistent height */
+    /* Style for the project cards - Full width list layout */
     .project-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        display: flex;
+        flex-direction: column;
         gap: 1.5rem;
     }
     .project-card {
+        width: 100%;
         border: 1px solid #d0d7de; /* Light gray border */
         border-radius: 8px;
         padding: 1.5rem;
@@ -25,7 +26,6 @@ st.markdown(
         flex-direction: column;
         justify-content: space-between;
         transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
-        height: 100%; /* Fill the grid cell */
     }
     .project-card:hover {
         transform: translateY(-5px);
