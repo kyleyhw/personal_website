@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-import html
+from bs4 import BeautifulSoup
 from utils import load_font
 
 # Load the custom font
@@ -63,101 +63,91 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- GITHUB AND ASSET SETUP ---
-GITHUB_USERNAME = "kyleyhw"
 
-
-# --- GITHUB REPO FETCHER ---
 @st.cache_data(ttl=3600)
-def fetch_pinned_repos(username: str, github_token: str):
+def fetch_pinned_repos(username):
     """
-    Fetches pinned repositories using the official GitHub GraphQL API.
-    Requires a Personal Access Token (PAT) for authentication.
+    Fetches pinned repositories from the public GitHub profile page.
+    No API token required.
     """
-    api_url = "https://api.github.com/graphql"
-    headers = {"Authorization": f"bearer {github_token}"}
-    query = """
-    query($username: String!) {
-      user(login: $username) {
-        pinnedItems(first: 6, types: REPOSITORY) {
-          nodes {
-            ... on Repository {
-              name
-              description
-              url
-              primaryLanguage {
-                name
-                color
-              }
-            }
-          }
-        }
-      }
+    url = f"https://github.com/{username}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
-    """
-    variables = {"username": username}
-
     try:
-        response = requests.post(api_url, json={"query": query, "variables": variables}, headers=headers)
-        if response.status_code == 200:
-            response_json = response.json()
-            if "errors" in response_json:
-                st.error(f"GitHub API returned errors: {response_json['errors']}")
-                return None
-            return response_json.get("data", {}).get("user", {}).get("pinnedItems", {}).get("nodes")
-        else:
-            st.error(f"GitHub API error: {response.status_code} - {response.text}")
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            st.error(f"Failed to load GitHub profile (Status: {response.status_code})")
             return None
-    except requests.exceptions.RequestException as e:
-        st.error(f"An error occurred while fetching data: {e}")
-        return None
-    except (KeyError, TypeError) as e:
-        st.error(f"Error parsing the response from GitHub. Please check your token and username. Details: {e}")
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        pinned_items = soup.find_all("div", class_="pinned-item-list-item-content")
+
+        repos = []
+        for item in pinned_items:
+            # Repo Name and URL
+            repo_link = item.find("a", class_="Link")
+            if not repo_link:
+                continue
+            name = repo_link.get_text(strip=True)
+            project_url = f"https://github.com{repo_link['href']}"
+
+            # Description
+            desc_tag = item.find("p", class_="pinned-item-desc")
+            description = desc_tag.get_text(strip=True) if desc_tag else "No description available."
+
+            # Language and Color
+            lang_tag = item.find("span", itemprop="programmingLanguage")
+            lang = lang_tag.get_text(strip=True) if lang_tag else "N/A"
+
+            color_tag = item.find("span", class_="repo-language-color")
+            color = color_tag["style"].split("background-color:")[1].strip().rstrip(";") if color_tag else "#808080"
+
+            repos.append({
+                "name": name,
+                "url": project_url,
+                "description": description,
+                "language": lang,
+                "color": color
+            })
+        return repos
+
+    except Exception as e:
+        st.error(f"Error scraping GitHub: {e}")
         return None
 
 
 # --- PORTFOLIO PAGE CONTENT ---
-st.title("featured projects")
+st.title("featured code repositories")
 st.subheader("a selection of my pinned GitHub repositories.")
 
-if "GITHUB_TOKEN" not in st.secrets:
-    st.error("`GITHUB_TOKEN` not found in Streamlit secrets. Please follow the instructions to add it.")
+GITHUB_USERNAME = "kyleyhw"
+projects = fetch_pinned_repos(GITHUB_USERNAME)
+
+if not projects:
+    st.info("No pinned repositories found or could not connect to GitHub. Please check your internet connection.")
 else:
-    github_token = st.secrets["GITHUB_TOKEN"]
-    repos = fetch_pinned_repos(GITHUB_USERNAME, github_token)
+    # Generate HTML for the project cards
+    project_cards_html = ""
+    for repo in projects:
+        repo_name = repo['name']
+        repo_url = repo['url']
+        description = repo['description']
+        # skills = repo.get('skills', '') # Scraper doesn't get skills metadata unless in README, stripping for now
+        lang_name = repo['language']
+        lang_color = repo['color']
 
-    if repos is None:
-        st.warning(
-            "Could not fetch GitHub projects. Please check the app logs or the error messages above for more details.")
-    elif not repos:
-        st.info(
-            f"No pinned repositories found for user '{GITHUB_USERNAME}'. Please ensure you have pinned some repositories on your GitHub profile.")
-    else:
-        # Generate HTML for the project cards
-        project_cards_html = ""
-        for repo in repos:
-            repo_name = repo.get('name', 'No name')
-            repo_url = repo.get('url', '#')
-            # Escape the description to prevent HTML injection issues
-            description = html.escape(repo.get('description', 'No description provided.'))
-
-            lang_name = "N/A"
-            lang_color = "#808080"
-            if repo.get('primaryLanguage'):
-                lang_name = repo['primaryLanguage'].get('name', 'N/A')
-                lang_color = repo['primaryLanguage'].get('color', '#808080')
-
-            project_cards_html += f"""
-            <div class="project-card">
-                <div>
-                    <h4><a href="{repo_url}" target="_blank">{repo_name}</a></h4>
-                    <p>{description}</p>
-                </div>
-                <div class="project-footer">
-                    <span class="lang-color-dot" style="background-color:{lang_color};"></span> {lang_name}
-                </div>
+        project_cards_html += f"""
+        <div class="project-card">
+            <div>
+                <h4><a href="{repo_url}" target="_blank">{repo_name}</a></h4>
+                <p>{description}</p>
             </div>
-            """
+            <div class="project-footer">
+                <span class="lang-color-dot" style="background-color:{lang_color};"></span> {lang_name}
+            </div>
+        </div>
+        """
 
-        # Display the cards in a grid
-        st.markdown(f'<div class="project-grid">{project_cards_html}</div>', unsafe_allow_html=True)
+    # Display the cards in a grid
+    st.markdown(f'<div class="project-grid">{project_cards_html}</div>', unsafe_allow_html=True)

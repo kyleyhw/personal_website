@@ -29,40 +29,71 @@ LINKEDIN_ICON = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fi
 # --- SIDEBAR ---
 with st.sidebar:
     try:
-        response = requests.get(PROFILE_PIC_URL, stream=True)
-        if response.status_code == 200:
-            profile_pic = Image.open(response.raw)
-            st.image(profile_pic, width=250)
-        else:
-            st.warning("Could not load profile picture.")
+        # Load local profile pic
+        profile_pic = Image.open("assets/profile_pic.jpeg")
+        st.image(profile_pic, width=250)
     except Exception as e:
         st.warning(f"Error loading profile picture: {e}")
 
     st.title("Kyle Wong")
-    st.write("MASt Astrophysics Student")
+    st.write("Recent Master's Graduate")
     st.write("University of Cambridge")
 
     st.markdown(f"[View CV]({CV_URL})", unsafe_allow_html=True)
 
     st.write("---")
     st.subheader("contact")
-    st.markdown(f"{EMAIL_ICON} [kyhw2@cam.ac.uk](mailto:kyhw2@cam.ac.uk)", unsafe_allow_html=True)
+    st.markdown(f"{EMAIL_ICON} [kyleyhw@gmail.com](mailto:kyleyhw@gmail.com)", unsafe_allow_html=True)
     st.markdown(f"{GITHUB_ICON} [kyleyhw](https://github.com/{GITHUB_USERNAME})", unsafe_allow_html=True)
     st.markdown(f"{LINKEDIN_ICON} [Kyle Wong](https://www.linkedin.com/in/kyle-wong-a95030281/)",
                 unsafe_allow_html=True)
 
 # --- HOME PAGE CONTENT ---
-st.title("about me")
+st.title("profile")
 st.write(
     """
-    I am a postgraduate student at the University of Cambridge pursuing a Master of Advanced Study in Astrophysics. 
-    My academic and research interests are centered on computational cosmology and gravitational wave astronomy. 
-    I have a strong foundation in physics and mathematics, graduating with an Honours Bachelor of Science from the University of Toronto.
-
-    My research experience includes developing simulations for 21-cm cosmology with the **Cosmic Dawn Group** at Cambridge, 
-    aiming to support future radio astronomy experiments like the Square Kilometre Array (SKA). I have also worked on probing 
-    neutron star physics using gravitational wave data from the **LIGO Scientific Collaboration** and contributed to the data 
-    analysis pipeline for the **HERA** radio telescope collaboration. I am proficient in Python, MATLAB, and various high-performance 
-    computing tools, with a focus on simulation, Bayesian inference, and data visualization.
+    A highly motivated recent Master's graduate from the University of Cambridge with a strong background in 
+    astrophysics, mathematics, and computational science. Experienced in cosmological research, gravitational wave 
+    data analysis, and radio astronomy. Seeking a challenging research or data science role to further develop expertise 
+    in scientific computing, data analysis, and software programming.
     """
 )
+
+st.write("---")
+
+st.header("education")
+
+st.subheader("Sidney Sussex College, University of Cambridge")
+st.write("MASt/Part III in Astrophysics | *Cambridge, England, United Kingdom (2024 - 2025)*")
+st.write("Graduated with Good Honours equivalent")
+
+st.subheader("Victoria College, University of Toronto")
+st.write("Honours Bachelor of Science (HBSc) in Physics & Mathematics | *Toronto, Ontario, Canada (2020 - 2024)*")
+st.write("Graduated with High Distinction")
+
+st.subheader("German Swiss International School")
+st.write("International Baccalaureate (IB) Diploma | *Hong Kong SAR, China (2010 - 2020)*")
+
+st.write("---")
+
+st.header("honours, awards and scholarships")
+st.markdown("""
+*   **Dean's List Scholar in the Faculty of Arts & Science** (2022, 2023, 2024)
+*   **Canadian Institute for Theoretical Astrophysics Summer Undergraduate Research Fellowship (CITA SURF)** (9,500 CAD, 2023)
+*   **Birkenshaw Family Scholarship II** (1,000 CAD, 2023)
+*   **McGill Space Institute (now Trottier Space Institute) Summer Undergraduate Research Award (MSI SURA)** (7,000 CAD, 2022)
+*   **David and Louise Fraser Scholarship** (2,500 CAD, 2022)
+*   **University of Toronto Scholar** (1,500 CAD, 2022)
+*   **Birkenshaw Family Scholarship** (1,000 CAD, 2022)
+""")
+
+st.write("---")
+
+st.header("skills")
+st.markdown("""
+*   **Programming:** Proficient in Python for scientific computing and data analysis, with additional experience in MATLAB and Java.
+*   **Data Analysis:** Multi-dimensional data visualization, fast Fourier transform, numerical methods (differentiation, integration, root finding, ODE/PDE solutions), Monte Carlo methods, and symbolic computing.
+*   **Software & Libraries:** Bilby (gravitational wave parameter estimation), 21cmSPACE, CAMB, recfast++ (cosmological simulation).
+*   **Machine Learning (ML):** Solid understanding of fundamental machine learning techniques, including the MCMC method and Convolutional Neural Network (CNN) architectures.
+*   **AI Tools:** Google Gemini, Gemini CLI, and ChatGPT for academic and scientific research and coding.
+""")
