@@ -138,16 +138,16 @@ else:
         lang_color = repo['color']
 
         project_cards_html += f"""
-        <div class="project-card">
-            <div>
-                <h4><a href="{repo_url}" target="_blank">{repo_name}</a></h4>
-                <p>{description}</p>
-            </div>
-            <div class="project-footer">
-                <span class="lang-color-dot" style="background-color:{lang_color};"></span> {lang_name}
-            </div>
-        </div>
-        """
+<div class="project-card">
+    <div>
+        <h4><a href="{repo_url}" target="_blank">{repo_name}</a></h4>
+        <p>{description}</p>
+    </div>
+    <div class="project-footer">
+        <span class="lang-color-dot" style="background-color:{lang_color};"></span> {lang_name}
+    </div>
+</div>
+"""
 
     # Display the cards in a grid
     st.markdown(f'<div class="project-grid">{project_cards_html}</div>', unsafe_allow_html=True)
