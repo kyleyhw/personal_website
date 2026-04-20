@@ -203,8 +203,8 @@ const proseClass = [
                 <div class="aspect-video overflow-hidden rounded border border-fg-subtle/30 bg-bg-elevated">
                   {entry.data.video ? (
                     <video
-                      src={entry.data.video}
-                      poster={entry.data.poster}
+                      src={asset(entry.data.video)}
+                      poster={entry.data.poster ? asset(entry.data.poster) : undefined}
                       class="w-full h-full object-cover"
                       playsinline
                       muted
@@ -215,7 +215,7 @@ const proseClass = [
                     />
                   ) : (
                     <img
-                      src={entry.data.image}
+                      src={asset(entry.data.image!)}
                       alt={entry.data.title}
                       loading="lazy"
                       class="w-full h-full object-cover"
