@@ -1,4 +1,7 @@
 ---
+import { readdirSync, statSync, readFileSync, existsSync } from "node:fs";
+import { join, extname, basename } from "node:path";
+import yaml from "js-yaml";
 import { getCollection, getEntry, render } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
@@ -6,6 +9,80 @@ import Section from "../components/Section.astro";
 
 const asset = (path: string) =>
   (import.meta.env.BASE_URL + "/" + path).replace(/\/+/g, "/");
+
+/* ============================================================
+   Climbing scanner — runs at build time.
+   Convention: drop media (.mp4/.webm/.mov/.jpg/.jpeg/.png/.webp)
+   into public/climbing/. Optionally add a same-basename .md
+   sidecar for title / location / date / description. Entries
+   sort chronologically by the sidecar `date` field (if set)
+   else by media file mtime — newest first.
+   ============================================================ */
+interface ClimbingEntry {
+  basename: string;
+  media: string; // path relative to public/, e.g. "/climbing/foo.jpg"
+  isVideo: boolean;
+  title: string;
+  location?: string;
+  date?: Date;
+  description?: string;
+  sortDate: Date; // date || mtime, used for ordering only
+}
+
+const VIDEO_EXTS = new Set([".mp4", ".webm", ".mov", ".m4v"]);
+const IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"]);
+
+function loadClimbing(): ClimbingEntry[] {
+  const dir = "public/climbing";
+  if (!existsSync(dir)) return [];
+  const files = readdirSync(dir);
+  const entries: ClimbingEntry[] = [];
+
+  for (const filename of files) {
+    const ext = extname(filename).toLowerCase();
+    const isVideo = VIDEO_EXTS.has(ext);
+    const isImage = IMAGE_EXTS.has(ext);
+    if (!isVideo && !isImage) continue;
+
+    const base = basename(filename, ext);
+    const mediaPath = join(dir, filename);
+    const mtime = statSync(mediaPath).mtime;
+
+    // Defaults — basename becomes a readable title when no sidecar exists.
+    let fm: Record<string, unknown> = { title: base.replace(/[_-]+/g, " ") };
+
+    const sidecarPath = join(dir, `${base}.md`);
+    if (existsSync(sidecarPath)) {
+      const raw = readFileSync(sidecarPath, "utf8");
+      const match = raw.match(/^---\s*\n([\s\S]*?)\n---/);
+      if (match) {
+        try {
+          const parsed = yaml.load(match[1]) as Record<string, unknown>;
+          if (parsed && typeof parsed === "object") fm = { ...fm, ...parsed };
+        } catch (err) {
+          console.warn(`[climbing] YAML parse failed for ${sidecarPath}:`, err);
+        }
+      }
+    }
+
+    const date = fm.date ? new Date(fm.date as string) : undefined;
+    entries.push({
+      basename: base,
+      media: `/climbing/${filename}`,
+      isVideo,
+      title: (fm.title as string) ?? base,
+      location: fm.location as string | undefined,
+      date,
+      description: fm.description as string | undefined,
+      sortDate: date && !isNaN(date.getTime()) ? date : mtime,
+    });
+  }
+
+  // Newest first.
+  return entries.sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime());
+}
+
+const climbing = loadClimbing();
 
 const site = await getEntry("site", "main");
 if (!site) throw new Error("site.main not found — check src/content/site.yaml");
@@ -17,9 +94,6 @@ const experience = (await getCollection("experience")).sort(
   (a, b) => (b.data.endDate ?? new Date()).getTime() - (a.data.endDate ?? new Date()).getTime(),
 );
 const projects = (await getCollection("projects")).sort(
-  (a, b) => b.data.priority - a.data.priority,
-);
-const climbing = (await getCollection("climbing")).sort(
   (a, b) => b.data.priority - a.data.priority,
 );
 
@@ -190,78 +264,118 @@ const proseClass = [
             Clips and photos coming soon. Drop media
             (<code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.mp4</code>,
             <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.jpg</code>,
-            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.png</code>,
-            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.webp</code>)
-            into <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">public/climbing/</code>
-            and create matching markdown entries in
-            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">src/content/climbing/</code>.
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.png</code>)
+            into <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">public/climbing/</code>.
+            Optionally add a same-basename
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.md</code>
+            sidecar with title / location / date / description.
           </p>
         ) : (
-          <ul class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
-            {climbing.map((entry) => (
-              <li class="relative">
-                <div
-                  data-climbing-card
-                  class="climbing-card group relative overflow-hidden rounded border border-fg-subtle/30 bg-bg-elevated
-                         transition-[transform,box-shadow,border-color] duration-500 ease-out
-                         motion-safe:hover:scale-[1.04] hover:border-accent/60
-                         hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.45)] hover:z-10"
+          <ul class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl">
+            {climbing.map((entry, i) => (
+              <li>
+                <button
+                  type="button"
+                  data-climbing-open={i}
+                  aria-label={`Open ${entry.title}`}
+                  class="block w-full aspect-[4/3] overflow-hidden rounded border border-fg-subtle/30 bg-bg-elevated
+                         transition-[transform,border-color] duration-300 ease-out cursor-pointer
+                         motion-safe:hover:scale-[1.03] hover:border-accent/60
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                 >
-                  <div class="aspect-[4/3]">
-                    {entry.data.video ? (
-                      <video
-                        src={asset(entry.data.video)}
-                        poster={entry.data.poster ? asset(entry.data.poster) : undefined}
-                        class="w-full h-full object-cover"
-                        playsinline
-                        muted
-                        loop
-                        preload="metadata"
-                        data-climbing-video
-                      />
-                    ) : (
-                      <img
-                        src={asset(entry.data.image!)}
-                        alt={entry.data.title}
-                        loading="lazy"
-                        class="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-
-                  {/* Details overlay — slides in from the right on hover,
-                      sits on top of the media with a left-fading gradient
-                      so the media stays partially visible behind the text. */}
-                  <div
-                    class="absolute inset-y-0 right-0 w-3/5 p-5 flex flex-col justify-end text-white
-                           bg-gradient-to-l from-black/85 via-black/70 to-transparent
-                           translate-x-full opacity-0
-                           group-hover:translate-x-0 group-hover:opacity-100
-                           transition-[transform,opacity] duration-500 ease-out
-                           pointer-events-none"
-                  >
-                    <h3 class="font-serif font-medium text-lg leading-tight">
-                      {entry.data.title}
-                    </h3>
-                    {(entry.data.location || entry.data.date) && (
-                      <p class="font-mono text-[0.7rem] uppercase tracking-wider opacity-80 mt-1">
-                        {entry.data.location}
-                        {entry.data.location && entry.data.date && " · "}
-                        {entry.data.date && fmtYear(entry.data.date)}
-                      </p>
-                    )}
-                    {entry.data.description && (
-                      <p class="text-sm mt-2 leading-relaxed opacity-90 line-clamp-5">
-                        {entry.data.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                  {entry.isVideo ? (
+                    <video
+                      src={asset(entry.media)}
+                      class="w-full h-full object-cover"
+                      playsinline
+                      muted
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={asset(entry.media)}
+                      alt={entry.title}
+                      loading="lazy"
+                      class="w-full h-full object-cover"
+                    />
+                  )}
+                </button>
               </li>
             ))}
           </ul>
         )}
       </Section>
+
+      {/* Modal dialogs — one per climbing entry. Native <dialog> gives us
+          a proper backdrop, Esc handling, and focus trap for free. The
+          modal fills ~90% of the viewport; media occupies 2/3 on wide
+          screens, details take the remaining 1/3. */}
+      {climbing.map((entry, i) => (
+        <dialog
+          data-climbing-dialog={i}
+          aria-label={entry.title}
+          class="w-[90vw] h-[90vh] max-w-none max-h-none m-auto p-0 bg-bg-elevated text-fg
+                 rounded-lg border border-fg-subtle/30
+                 backdrop:bg-black/70 backdrop:backdrop-blur-sm
+                 open:opacity-100 opacity-0 transition-opacity duration-300"
+        >
+          <div class="flex flex-col lg:flex-row h-full">
+            <div class="lg:w-2/3 flex-1 bg-black flex items-center justify-center overflow-hidden min-h-0">
+              {entry.isVideo ? (
+                <video
+                  data-climbing-dialog-video={i}
+                  src={asset(entry.media)}
+                  class="max-w-full max-h-full"
+                  playsinline
+                  muted
+                  loop
+                  controls
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  src={asset(entry.media)}
+                  alt={entry.title}
+                  class="max-w-full max-h-full object-contain"
+                />
+              )}
+            </div>
+            <aside class="lg:w-1/3 p-8 lg:p-10 overflow-y-auto relative bg-bg-elevated">
+              <button
+                type="button"
+                data-climbing-close
+                aria-label="Close"
+                class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full
+                       text-fg-muted hover:text-fg hover:bg-bg transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
+                  <path d="M6 6L18 18M6 18L18 6" />
+                </svg>
+              </button>
+              <h3 class="font-serif font-medium text-3xl leading-tight pr-8">
+                {entry.title}
+              </h3>
+              {(entry.location || entry.date) && (
+                <p class="font-mono text-xs uppercase tracking-wider text-fg-muted mt-3">
+                  {entry.location}
+                  {entry.location && entry.date && " · "}
+                  {entry.date &&
+                    entry.date.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                </p>
+              )}
+              {entry.description && (
+                <p class="text-fg-muted text-base leading-relaxed mt-6 whitespace-pre-line">
+                  {entry.description}
+                </p>
+              )}
+            </aside>
+          </div>
+        </dialog>
+      ))}
 
       <footer class="pt-12 font-mono text-xs text-fg-subtle">
         Built with Astro. Content is Markdown under
@@ -270,22 +384,71 @@ const proseClass = [
     </main>
   </div>
 
-  {/* Climbing videos: paused by default, play while the card is hovered,
-      then reset to the first frame on leave. Mobile / no-hover devices
-      fall through to the poster / first-frame preview. */}
+  {/* Climbing modal: open <dialog> on card click; backdrop click / Esc
+      closes. Videos auto-play on open and reset on close so users only
+      see motion when the modal is active. */}
   <script is:inline>
     (function () {
-      var cards = document.querySelectorAll("[data-climbing-card]");
-      cards.forEach(function (card) {
-        var video = card.querySelector("[data-climbing-video]");
-        if (!video) return;
-        card.addEventListener("mouseenter", function () {
+      var openers = document.querySelectorAll("[data-climbing-open]");
+      var dialogs = document.querySelectorAll("[data-climbing-dialog]");
+
+      function dialogForIndex(idx) {
+        return document.querySelector(
+          '[data-climbing-dialog="' + idx + '"]',
+        );
+      }
+
+      function openModal(idx) {
+        var dlg = dialogForIndex(idx);
+        if (!dlg) return;
+        // <dialog> supports showModal() on modern browsers.
+        if (typeof dlg.showModal === "function") dlg.showModal();
+        else dlg.setAttribute("open", "");
+        var video = dlg.querySelector("video");
+        if (video) {
+          video.currentTime = 0;
           var p = video.play();
           if (p && typeof p.catch === "function") p.catch(function () {});
-        });
-        card.addEventListener("mouseleave", function () {
+        }
+      }
+
+      function closeModal(dlg) {
+        if (typeof dlg.close === "function") dlg.close();
+        else dlg.removeAttribute("open");
+        var video = dlg.querySelector("video");
+        if (video) {
           video.pause();
           video.currentTime = 0;
+        }
+      }
+
+      openers.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          openModal(btn.getAttribute("data-climbing-open"));
+        });
+      });
+
+      dialogs.forEach(function (dlg) {
+        // Click on the backdrop (target is the dialog itself, not its children)
+        // closes the modal.
+        dlg.addEventListener("click", function (e) {
+          if (e.target === dlg) closeModal(dlg);
+        });
+        // Close buttons inside the dialog.
+        var closers = dlg.querySelectorAll("[data-climbing-close]");
+        closers.forEach(function (c) {
+          c.addEventListener("click", function () {
+            closeModal(dlg);
+          });
+        });
+        // Pause video when the dialog is closed via Esc (handled by <dialog>
+        // natively; we catch the 'close' event to sync video state).
+        dlg.addEventListener("close", function () {
+          var video = dlg.querySelector("video");
+          if (video) {
+            video.pause();
+            video.currentTime = 0;
+          }
         });
       });
     })();
