@@ -23,11 +23,13 @@ const climbing = (await getCollection("climbing")).sort(
   (a, b) => b.data.priority - a.data.priority,
 );
 
+const aboutEntry = await getEntry("about", "main");
 const awardsEntry = await getEntry("awards", "main");
 const coursesEntry = await getEntry("courses", "main");
 const skillsEntry = await getEntry("skills", "main");
 const personalEntry = await getEntry("personal", "main");
 
+const { Content: AboutContent } = aboutEntry ? await render(aboutEntry) : { Content: null };
 const { Content: AwardsContent } = awardsEntry ? await render(awardsEntry) : { Content: null };
 const { Content: CoursesContent } = coursesEntry ? await render(coursesEntry) : { Content: null };
 const { Content: SkillsContent } = skillsEntry ? await render(skillsEntry) : { Content: null };
@@ -62,6 +64,12 @@ const proseClass = [
     />
 
     <main class="lg:py-24 space-y-24 pb-24">
+      {AboutContent && (
+        <Section id="about" label="About">
+          <div class={proseClass}><AboutContent /></div>
+        </Section>
+      )}
+
       <Section id="education" label="Education">
         <ul class="space-y-10 max-w-2xl">
           {education.map((entry) => (
