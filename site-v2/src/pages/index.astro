@@ -111,6 +111,15 @@ const { Content: PersonalContent } = personalEntry ? await render(personalEntry)
 
 const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
 
+// Build-time timestamp — captured when Astro generates the static HTML.
+// Displayed in the footer as "Last updated". On GitHub Pages each push
+// to master rebuilds, so this reflects the most recent deploy.
+const lastUpdated = new Date().toLocaleDateString("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
 // Prose styling shared across singleton-content sections. h2 subheads
 // come through as serif medium; lists are bullet-aligned with muted
 // body text; strong-text inherits fg so bolded labels pop.
@@ -273,15 +282,12 @@ const proseClass = [
         ) : (
           <ul class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl">
             {climbing.map((entry, i) => (
-              <li>
-                <button
-                  type="button"
-                  data-climbing-open={i}
-                  aria-label={`Open ${entry.title}`}
-                  class="block w-full aspect-[4/3] overflow-hidden rounded border border-fg-subtle/30 bg-bg-elevated
-                         transition-[transform,border-color] duration-300 ease-out cursor-pointer
-                         motion-safe:hover:scale-[1.03] hover:border-accent/60
-                         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              <li class="group relative" data-climbing-item={i}>
+                {/* Grid tile — always visible. */}
+                <div
+                  class="block w-full aspect-[4/3] overflow-hidden rounded-xl border border-fg-subtle/30 bg-bg-elevated
+                         transition-[transform,border-color,box-shadow] duration-300 ease-out
+                         motion-safe:group-hover:scale-[1.02] group-hover:border-accent/60 group-hover:shadow-lg"
                 >
                   {entry.isVideo ? (
                     <video
@@ -299,156 +305,102 @@ const proseClass = [
                       class="w-full h-full object-cover"
                     />
                   )}
-                </button>
+                </div>
+
+                {/* Overlay — fixed to the viewport, reveals on group hover.
+                    Media sizes to its natural aspect ratio (max 70vw wide,
+                    85vh tall) so there are no black bars regardless of
+                    portrait vs. landscape input. Details float beside the
+                    media in a rounded elevated card. */}
+                <div
+                  class="fixed inset-0 z-50 flex items-center justify-center px-[4vw]
+                         bg-black/70 backdrop-blur-sm
+                         opacity-0 pointer-events-none
+                         group-hover:opacity-100 group-hover:pointer-events-auto
+                         motion-safe:transition-opacity duration-500 ease-out"
+                >
+                  <div
+                    class="flex flex-col lg:flex-row items-center justify-center gap-6 max-w-full max-h-full
+                           motion-safe:scale-95 motion-safe:group-hover:scale-100
+                           transition-transform duration-500 ease-out"
+                  >
+                    {entry.isVideo ? (
+                      <video
+                        data-climbing-overlay-video={i}
+                        src={asset(entry.media)}
+                        class="max-w-[70vw] max-h-[85vh] w-auto h-auto rounded-xl shadow-2xl"
+                        playsinline
+                        muted
+                        loop
+                        controls
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={asset(entry.media)}
+                        alt={entry.title}
+                        class="max-w-[70vw] max-h-[85vh] w-auto h-auto rounded-xl shadow-2xl"
+                      />
+                    )}
+
+                    <aside
+                      class="w-80 flex-shrink-0 bg-bg-elevated rounded-xl p-6 shadow-2xl
+                             max-h-[85vh] overflow-y-auto border border-fg-subtle/20"
+                    >
+                      <h3 class="font-serif font-medium text-3xl leading-tight text-fg">
+                        {entry.title}
+                      </h3>
+                      {(entry.location || entry.date) && (
+                        <p class="font-mono text-xs uppercase tracking-wider text-fg-muted mt-3">
+                          {entry.location}
+                          {entry.location && entry.date && " · "}
+                          {entry.date &&
+                            entry.date.toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                        </p>
+                      )}
+                      {entry.description && (
+                        <p class="text-fg-muted text-base leading-relaxed mt-6 whitespace-pre-line">
+                          {entry.description}
+                        </p>
+                      )}
+                    </aside>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </Section>
 
-      {/* Modal dialogs — one per climbing entry. Native <dialog> gives us
-          a proper backdrop, Esc handling, and focus trap for free. The
-          modal fills ~90% of the viewport; media occupies 2/3 on wide
-          screens, details take the remaining 1/3. */}
-      {climbing.map((entry, i) => (
-        <dialog
-          data-climbing-dialog={i}
-          aria-label={entry.title}
-          class="w-[90vw] h-[90vh] max-w-none max-h-none m-auto p-0 bg-bg-elevated text-fg
-                 rounded-lg border border-fg-subtle/30
-                 backdrop:bg-black/70 backdrop:backdrop-blur-sm
-                 open:opacity-100 opacity-0 transition-opacity duration-300"
-        >
-          <div class="flex flex-col lg:flex-row h-full">
-            <div class="lg:w-2/3 flex-1 bg-black flex items-center justify-center overflow-hidden min-h-0">
-              {entry.isVideo ? (
-                <video
-                  data-climbing-dialog-video={i}
-                  src={asset(entry.media)}
-                  class="max-w-full max-h-full"
-                  playsinline
-                  muted
-                  loop
-                  controls
-                  preload="metadata"
-                />
-              ) : (
-                <img
-                  src={asset(entry.media)}
-                  alt={entry.title}
-                  class="max-w-full max-h-full object-contain"
-                />
-              )}
-            </div>
-            <aside class="lg:w-1/3 p-8 lg:p-10 overflow-y-auto relative bg-bg-elevated">
-              <button
-                type="button"
-                data-climbing-close
-                aria-label="Close"
-                class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full
-                       text-fg-muted hover:text-fg hover:bg-bg transition-colors cursor-pointer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
-                  <path d="M6 6L18 18M6 18L18 6" />
-                </svg>
-              </button>
-              <h3 class="font-serif font-medium text-3xl leading-tight pr-8">
-                {entry.title}
-              </h3>
-              {(entry.location || entry.date) && (
-                <p class="font-mono text-xs uppercase tracking-wider text-fg-muted mt-3">
-                  {entry.location}
-                  {entry.location && entry.date && " · "}
-                  {entry.date &&
-                    entry.date.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                </p>
-              )}
-              {entry.description && (
-                <p class="text-fg-muted text-base leading-relaxed mt-6 whitespace-pre-line">
-                  {entry.description}
-                </p>
-              )}
-            </aside>
-          </div>
-        </dialog>
-      ))}
-
       <footer class="pt-12 font-mono text-xs text-fg-subtle">
-        Built with Astro. Content is Markdown under
-        <code class="text-fg-muted">src/content/</code>.
+        Last updated {lastUpdated}.
       </footer>
     </main>
   </div>
 
-  {/* Climbing modal: open <dialog> on card click; backdrop click / Esc
-      closes. Videos auto-play on open and reset on close so users only
-      see motion when the modal is active. */}
+  {/* Climbing: overlay video play/pause is tied to hover on the wrapping
+      <li>. mouseenter/mouseleave on the li fire when the pointer enters
+      the element OR any of its descendants (including the fixed overlay)
+      and exits ALL of them, so the video plays for as long as either the
+      grid tile or its overlay is hovered. */}
   <script is:inline>
     (function () {
-      var openers = document.querySelectorAll("[data-climbing-open]");
-      var dialogs = document.querySelectorAll("[data-climbing-dialog]");
-
-      function dialogForIndex(idx) {
-        return document.querySelector(
-          '[data-climbing-dialog="' + idx + '"]',
-        );
-      }
-
-      function openModal(idx) {
-        var dlg = dialogForIndex(idx);
-        if (!dlg) return;
-        // <dialog> supports showModal() on modern browsers.
-        if (typeof dlg.showModal === "function") dlg.showModal();
-        else dlg.setAttribute("open", "");
-        var video = dlg.querySelector("video");
-        if (video) {
+      var items = document.querySelectorAll("[data-climbing-item]");
+      items.forEach(function (li) {
+        var video = li.querySelector("[data-climbing-overlay-video]");
+        if (!video) return;
+        li.addEventListener("mouseenter", function () {
           video.currentTime = 0;
           var p = video.play();
           if (p && typeof p.catch === "function") p.catch(function () {});
-        }
-      }
-
-      function closeModal(dlg) {
-        if (typeof dlg.close === "function") dlg.close();
-        else dlg.removeAttribute("open");
-        var video = dlg.querySelector("video");
-        if (video) {
+        });
+        li.addEventListener("mouseleave", function () {
           video.pause();
           video.currentTime = 0;
-        }
-      }
-
-      openers.forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          openModal(btn.getAttribute("data-climbing-open"));
-        });
-      });
-
-      dialogs.forEach(function (dlg) {
-        // Click on the backdrop (target is the dialog itself, not its children)
-        // closes the modal.
-        dlg.addEventListener("click", function (e) {
-          if (e.target === dlg) closeModal(dlg);
-        });
-        // Close buttons inside the dialog.
-        var closers = dlg.querySelectorAll("[data-climbing-close]");
-        closers.forEach(function (c) {
-          c.addEventListener("click", function () {
-            closeModal(dlg);
-          });
-        });
-        // Pause video when the dialog is closed via Esc (handled by <dialog>
-        // natively; we catch the 'close' event to sync video state).
-        dlg.addEventListener("close", function () {
-          var video = dlg.querySelector("video");
-          if (video) {
-            video.pause();
-            video.currentTime = 0;
-          }
         });
       });
     })();
