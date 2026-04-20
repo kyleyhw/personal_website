@@ -1,18 +1,91 @@
 ---
+import { readdirSync, statSync, readFileSync, existsSync } from "node:fs";
+import { join, extname, basename } from "node:path";
+import yaml from "js-yaml";
 import { getCollection, getEntry, render } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import Section from "../components/Section.astro";
 
-// Normalise base-prefixed asset URLs — see Layout.astro for rationale.
 const asset = (path: string) =>
   (import.meta.env.BASE_URL + "/" + path).replace(/\/+/g, "/");
 
+/* ============================================================
+   Climbing scanner — runs at build time.
+   Convention: drop media (.mp4/.webm/.mov/.jpg/.jpeg/.png/.webp)
+   into public/climbing/. Optionally add a same-basename .md
+   sidecar for title / location / date / description. Entries
+   sort chronologically by the sidecar `date` field (if set)
+   else by media file mtime — newest first.
+   ============================================================ */
+interface ClimbingEntry {
+  basename: string;
+  media: string; // path relative to public/, e.g. "/climbing/foo.jpg"
+  isVideo: boolean;
+  title: string;
+  location?: string;
+  date?: Date;
+  description?: string;
+  sortDate: Date; // date || mtime, used for ordering only
+}
+
+const VIDEO_EXTS = new Set([".mp4", ".webm", ".mov", ".m4v"]);
+const IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"]);
+
+function loadClimbing(): ClimbingEntry[] {
+  const dir = "public/climbing";
+  if (!existsSync(dir)) return [];
+  const files = readdirSync(dir);
+  const entries: ClimbingEntry[] = [];
+
+  for (const filename of files) {
+    const ext = extname(filename).toLowerCase();
+    const isVideo = VIDEO_EXTS.has(ext);
+    const isImage = IMAGE_EXTS.has(ext);
+    if (!isVideo && !isImage) continue;
+
+    const base = basename(filename, ext);
+    const mediaPath = join(dir, filename);
+    const mtime = statSync(mediaPath).mtime;
+
+    // Defaults — basename becomes a readable title when no sidecar exists.
+    let fm: Record<string, unknown> = { title: base.replace(/[_-]+/g, " ") };
+
+    const sidecarPath = join(dir, `${base}.md`);
+    if (existsSync(sidecarPath)) {
+      const raw = readFileSync(sidecarPath, "utf8");
+      const match = raw.match(/^---\s*\n([\s\S]*?)\n---/);
+      if (match) {
+        try {
+          const parsed = yaml.load(match[1]) as Record<string, unknown>;
+          if (parsed && typeof parsed === "object") fm = { ...fm, ...parsed };
+        } catch (err) {
+          console.warn(`[climbing] YAML parse failed for ${sidecarPath}:`, err);
+        }
+      }
+    }
+
+    const date = fm.date ? new Date(fm.date as string) : undefined;
+    entries.push({
+      basename: base,
+      media: `/climbing/${filename}`,
+      isVideo,
+      title: (fm.title as string) ?? base,
+      location: fm.location as string | undefined,
+      date,
+      description: fm.description as string | undefined,
+      sortDate: date && !isNaN(date.getTime()) ? date : mtime,
+    });
+  }
+
+  // Newest first.
+  return entries.sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime());
+}
+
+const climbing = loadClimbing();
+
 const site = await getEntry("site", "main");
 if (!site) throw new Error("site.main not found — check src/content/site.yaml");
-
-const aboutEntry = await getEntry("about", "main");
-const { Content: AboutContent } = aboutEntry ? await render(aboutEntry) : { Content: null };
 
 const education = (await getCollection("education")).sort(
   (a, b) => (b.data.endDate ?? new Date()).getTime() - (a.data.endDate ?? new Date()).getTime(),
@@ -24,7 +97,39 @@ const projects = (await getCollection("projects")).sort(
   (a, b) => b.data.priority - a.data.priority,
 );
 
+const aboutEntry = await getEntry("about", "main");
+const awardsEntry = await getEntry("awards", "main");
+const coursesEntry = await getEntry("courses", "main");
+const skillsEntry = await getEntry("skills", "main");
+const personalEntry = await getEntry("personal", "main");
+
+const { Content: AboutContent } = aboutEntry ? await render(aboutEntry) : { Content: null };
+const { Content: AwardsContent } = awardsEntry ? await render(awardsEntry) : { Content: null };
+const { Content: CoursesContent } = coursesEntry ? await render(coursesEntry) : { Content: null };
+const { Content: SkillsContent } = skillsEntry ? await render(skillsEntry) : { Content: null };
+const { Content: PersonalContent } = personalEntry ? await render(personalEntry) : { Content: null };
+
 const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
+
+// Build-time timestamp — captured when Astro generates the static HTML.
+// Displayed in the footer as "Last updated". On GitHub Pages each push
+// to master rebuilds, so this reflects the most recent deploy.
+const lastUpdated = new Date().toLocaleDateString("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+// Prose styling shared across singleton-content sections. h2 subheads
+// come through as serif medium; lists are bullet-aligned with muted
+// body text; strong-text inherits fg so bolded labels pop.
+const proseClass = [
+  "max-w-2xl text-fg leading-relaxed",
+  "[&>p]:mb-5",
+  "[&_h2]:font-serif [&_h2]:font-medium [&_h2]:text-2xl [&_h2]:text-fg [&_h2]:mt-12 [&_h2]:mb-4 [&_h2:first-child]:mt-0",
+  "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_ul]:text-fg-muted",
+  "[&_strong]:text-fg [&_strong]:font-medium",
+].join(" ");
 ---
 
 <Layout title={`${site.data.name} — ${site.data.tagline}`} description={site.data.tagline}>
@@ -41,21 +146,17 @@ const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
       profileSrc={asset("profile_pic.jpeg")}
     />
 
-    <main class="lg:py-24 space-y-24 pb-24">
+    <main class="lg:py-24 space-y-16 pb-24">
       {AboutContent && (
         <Section id="about" label="About">
-          <div
-            class="max-w-2xl text-fg leading-relaxed [&_p]:mb-5 [&_h2]:font-serif [&_h2]:font-medium [&_h2]:text-xl [&_h2]:text-fg [&_h2]:mt-10 [&_h2]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-1.5 [&_ul]:text-fg-muted [&_strong]:text-fg [&_strong]:font-medium"
-          >
-            <AboutContent />
-          </div>
+          <div class={proseClass}><AboutContent /></div>
         </Section>
       )}
 
       <Section id="education" label="Education">
         <ul class="space-y-10 max-w-2xl">
           {education.map((entry) => (
-            <li class="group">
+            <li>
               <div class="flex justify-between items-baseline gap-4 mb-1">
                 <h3 class="font-serif font-medium text-xl text-fg">{entry.data.institution}</h3>
                 <span class="font-mono text-xs text-fg-subtle whitespace-nowrap">
@@ -77,7 +178,7 @@ const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
           {experience.map(async (entry) => {
             const { Content } = await render(entry);
             return (
-              <li class="group">
+              <li>
                 <div class="flex justify-between items-baseline gap-4 mb-1">
                   <h3 class="font-serif font-medium text-xl text-fg">{entry.data.role}</h3>
                   <span class="font-mono text-xs text-fg-subtle whitespace-nowrap">
@@ -142,10 +243,241 @@ const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
         </ul>
       </Section>
 
+      {AwardsContent && (
+        <Section id="awards" label="Awards">
+          <div class={proseClass}><AwardsContent /></div>
+        </Section>
+      )}
+
+      {CoursesContent && (
+        <Section id="courses" label="Courses">
+          <div class={proseClass}><CoursesContent /></div>
+        </Section>
+      )}
+
+      {SkillsContent && (
+        <Section id="skills" label="Skills">
+          <div class={proseClass}><SkillsContent /></div>
+        </Section>
+      )}
+
+      {PersonalContent && (
+        <Section id="personal" label="Personal">
+          <div class={proseClass}><PersonalContent /></div>
+        </Section>
+      )}
+
+      <Section id="climbing" label="Climbing">
+        {climbing.length === 0 ? (
+          <p class="text-fg-muted text-sm max-w-xl">
+            Clips and photos coming soon. Drop media
+            (<code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.mp4</code>,
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.jpg</code>,
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.png</code>)
+            into <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">public/climbing/</code>.
+            Optionally add a same-basename
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.md</code>
+            sidecar with title / location / date / description.
+          </p>
+        ) : (
+          <ul class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl">
+            {climbing.map((entry, i) => (
+              <li>
+                <div
+                  data-climbing-tile={i}
+                  aria-label={entry.title}
+                  class="block w-full aspect-[4/3] overflow-hidden rounded-xl border border-fg-subtle/30 bg-bg-elevated
+                         transition-[transform,border-color,box-shadow] duration-300 ease-out cursor-pointer
+                         motion-safe:hover:scale-[1.02] hover:border-accent/60 hover:shadow-lg"
+                >
+                  {entry.isVideo ? (
+                    <video
+                      src={asset(entry.media)}
+                      class="w-full h-full object-cover"
+                      playsinline
+                      muted
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={asset(entry.media)}
+                      alt={entry.title}
+                      loading="lazy"
+                      class="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
       <footer class="pt-12 font-mono text-xs text-fg-subtle">
-        Built with Astro. Content is Markdown under
-        <code class="text-fg-muted">src/content/</code>.
+        Last updated {lastUpdated}.
       </footer>
     </main>
   </div>
+
+  {/* Climbing overlays live outside <main> to escape the
+      .reveal containing block (its transform + will-change would
+      otherwise constrain position:fixed children to the section's
+      box). JS below coordinates visibility with the tile hover. */}
+  {climbing.length > 0 && (
+    <div aria-hidden="true">
+      {climbing.map((entry, i) => (
+        <div
+          data-climbing-overlay={i}
+          class="climbing-overlay fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-[4vh_4vw]
+                 bg-black/80 backdrop-blur-sm
+                 opacity-0 pointer-events-none
+                 motion-safe:transition-opacity duration-500 ease-out"
+        >
+          <div
+            class="climbing-overlay-inner flex flex-col lg:flex-row items-center justify-center gap-4
+                   motion-safe:scale-95 transition-transform duration-500 ease-out"
+          >
+            {entry.isVideo ? (
+              <video
+                data-climbing-overlay-video={i}
+                src={asset(entry.media)}
+                class="max-w-[60vw] max-h-[88vh] w-auto h-auto rounded-xl shadow-2xl"
+                playsinline
+                muted
+                loop
+                controls
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={asset(entry.media)}
+                alt={entry.title}
+                class="max-w-[60vw] max-h-[88vh] w-auto h-auto rounded-xl shadow-2xl"
+              />
+            )}
+
+            <aside
+              class="w-full lg:w-72 flex-shrink-0 bg-bg-elevated rounded-xl p-6 shadow-2xl
+                     max-h-[88vh] overflow-y-auto border border-fg-subtle/20"
+            >
+              <h3 class="font-serif font-medium text-2xl leading-tight text-fg">
+                {entry.title}
+              </h3>
+              {(entry.location || entry.date) && (
+                <p class="font-mono text-xs uppercase tracking-wider text-fg-muted mt-3">
+                  {entry.location}
+                  {entry.location && entry.date && " · "}
+                  {entry.date &&
+                    entry.date.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                </p>
+              )}
+              {entry.description && (
+                <p class="text-fg-muted text-sm leading-relaxed mt-5 whitespace-pre-line">
+                  {entry.description}
+                </p>
+              )}
+            </aside>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <style>
+    .climbing-overlay.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .climbing-overlay.is-active .climbing-overlay-inner {
+      transform: none;
+    }
+  </style>
+
+  {/* Climbing hover coordination. The overlays live at the root of
+      the page rather than inside each grid cell, so CSS group-hover
+      can't reach them. We set .is-active via JS on mouseenter of
+      either the tile OR the overlay itself; mouseleave schedules a
+      short-delayed hide so the cursor can transition between them
+      without the overlay flickering off. */}
+  <script is:inline>
+    (function () {
+      var tiles = document.querySelectorAll("[data-climbing-tile]");
+      if (tiles.length === 0) return;
+
+      var hideTimer = null;
+      var activeOverlay = null;
+
+      function overlayFor(idx) {
+        return document.querySelector('[data-climbing-overlay="' + idx + '"]');
+      }
+
+      function playVideo(overlay) {
+        var v = overlay.querySelector("video");
+        if (!v) return;
+        v.currentTime = 0;
+        var p = v.play();
+        if (p && typeof p.catch === "function") p.catch(function () {});
+      }
+
+      function pauseVideo(overlay) {
+        var v = overlay.querySelector("video");
+        if (!v) return;
+        v.pause();
+        v.currentTime = 0;
+      }
+
+      function show(overlay) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+        if (activeOverlay && activeOverlay !== overlay) {
+          activeOverlay.classList.remove("is-active");
+          pauseVideo(activeOverlay);
+        }
+        activeOverlay = overlay;
+        overlay.classList.add("is-active");
+        playVideo(overlay);
+      }
+
+      function scheduleHide() {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(function () {
+          if (activeOverlay) {
+            activeOverlay.classList.remove("is-active");
+            pauseVideo(activeOverlay);
+            activeOverlay = null;
+          }
+        }, 120);
+      }
+
+      tiles.forEach(function (tile) {
+        var idx = tile.getAttribute("data-climbing-tile");
+        var overlay = overlayFor(idx);
+        if (!overlay) return;
+
+        tile.addEventListener("mouseenter", function () {
+          show(overlay);
+        });
+        tile.addEventListener("mouseleave", scheduleHide);
+
+        overlay.addEventListener("mouseenter", function () {
+          clearTimeout(hideTimer);
+          hideTimer = null;
+        });
+        overlay.addEventListener("mouseleave", scheduleHide);
+      });
+
+      // Close on Esc — nice to have even though there's no button.
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && activeOverlay) {
+          activeOverlay.classList.remove("is-active");
+          pauseVideo(activeOverlay);
+          activeOverlay = null;
+        }
+      });
+    })();
+  </script>
 </Layout>

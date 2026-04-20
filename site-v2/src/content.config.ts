@@ -22,7 +22,9 @@ const site = defineCollection({
 });
 
 /* ============================================================
-   About — bio prose as Markdown.
+   About — bio prose. Retained as a collection for backward
+   compatibility; currently unused on the page but available
+   if a bio section is reintroduced later.
    ============================================================ */
 const about = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/about" }),
@@ -66,33 +68,69 @@ const experience = defineCollection({
 
 /* ============================================================
    Projects — auto-populated at build time by
-   scripts/fetch-github-repos.mjs. Do not hand-edit the files
-   under src/content/projects; regenerate via `npm run sync:github`.
+   scripts/fetch-github-repos.mjs, plus hand-authored manual
+   entries (see projects/mercury_strategies.md).
    ============================================================ */
 const projects = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/projects" }),
   schema: z.object({
     name: z.string(),
-    // url is optional so private / manual entries without a public URL
-    // can coexist with auto-fetched public repos.
     url: z.string().url().optional(),
     description: z.string(),
-    // If present, takes precedence over `description` when the page
-    // renders. Survives re-syncs (the fetch script preserves it). Use
-    // this to override the GitHub repo description with hand-authored copy.
     description_override: z.string().optional(),
     language: z.string().nullable().optional(),
     stars: z.number().optional(),
     forks: z.number().optional(),
     updatedAt: z.coerce.date().optional(),
     priority: z.number().default(0),
-    // `manual: true` signals the sync script to preserve this file
-    // (hand-authored, typically for private or non-GitHub projects).
     manual: z.boolean().default(false),
-    // Free-form badge shown in place of `language` for manual entries
-    // (e.g. "Private", "Archived"). Falls back to language when absent.
     badge: z.string().optional(),
   }),
 });
 
-export const collections = { site, about, education, experience, projects };
+/* ============================================================
+   Singleton-content collections — each holds one `main.md`
+   whose body renders as the section content. These exist as
+   collections (rather than plain files imported by index.astro)
+   so edits live under src/content/ and integrate with Astro's
+   content-layer hot reload.
+   ============================================================ */
+const singletonSchema = z.object({ title: z.string().optional() });
+
+const awards = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/awards" }),
+  schema: singletonSchema,
+});
+
+const courses = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/courses" }),
+  schema: singletonSchema,
+});
+
+const skills = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/skills" }),
+  schema: singletonSchema,
+});
+
+const personal = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/personal" }),
+  schema: singletonSchema,
+});
+
+/* Climbing is NOT a content collection.
+   See src/pages/index.astro for the build-time scanner — it reads
+   media (.mp4/.webm/.mov/.jpg/.jpeg/.png/.webp) directly from
+   public/climbing/, plus optional same-basename .md sidecars for
+   title / location / date / description. */
+
+export const collections = {
+  site,
+  about,
+  education,
+  experience,
+  projects,
+  awards,
+  courses,
+  skills,
+  personal,
+};
