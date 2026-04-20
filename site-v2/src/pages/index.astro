@@ -4,6 +4,10 @@ import Layout from "../layouts/Layout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import Section from "../components/Section.astro";
 
+// Normalise base-prefixed asset URLs — see Layout.astro for rationale.
+const asset = (path: string) =>
+  (import.meta.env.BASE_URL + "/" + path).replace(/\/+/g, "/");
+
 const site = await getEntry("site", "main");
 if (!site) throw new Error("site.main not found — check src/content/site.yaml");
 
@@ -34,7 +38,7 @@ const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
       github={site.data.socials.github}
       linkedin={site.data.socials.linkedin}
       cvUrl={site.data.cv_url}
-      profileSrc="/profile_pic.jpeg"
+      profileSrc={asset("profile_pic.jpeg")}
     />
 
     <main class="lg:py-24 space-y-24 pb-24">

@@ -1,113 +1,117 @@
 # Deployment
 
-This site deploys as a static build (`dist/`) to Vercel. There is no
-server runtime — every page is pre-rendered HTML with a small amount
-of inline JavaScript for the theme toggle, active-nav observer, and
-scroll-reveal observer.
+This site deploys as a static build (`dist/`) to **GitHub Pages** via the
+workflow in `.github/workflows/deploy.yml`. There is no server runtime;
+every page is pre-rendered HTML with a small amount of inline JavaScript
+for the theme toggle, active-nav observer, and scroll-reveal observer.
 
-## Prerequisites
+## Where the site lives
 
-- Node.js ≥ 22.12 (matches `package.json` `engines`).
-- A [Vercel](https://vercel.com) account (free tier is sufficient).
-- Repository pushed to GitHub (already done — site lives in
-  `kyleyhw/personal_website` under `site-v2/`).
+Published URL: **https://kyleyhw.github.io/personal_website/**
 
-## One-time setup — GitHub integration (recommended)
+The `/personal_website` suffix is the repository-scoped GitHub Pages
+path. Astro's `astro.config.mjs` sets `base: "/personal_website"` so
+every internal link, stylesheet, image, and favicon is emitted with
+that prefix. When a custom domain is later attached (see below), the
+prefix goes away and `base` should be changed to `"/"`.
 
-This path auto-deploys every push to `master` and provides preview
-URLs for every pull request.
+## One-time setup
 
-1. Sign in to Vercel with the same GitHub account that owns the repo.
-2. Click **Add New → Project**, select `kyleyhw/personal_website`.
-3. Under **Root Directory**, set `site-v2` (not the repo root — the
-   site lives in that subdirectory).
-4. Framework preset should auto-detect as **Astro**.
-5. Leave build/install commands as Vercel's defaults (they match
-   what `vercel.json` declares).
-6. Under **Environment Variables** (optional but recommended), add:
+These steps are only needed once. After that, every push to `master`
+auto-deploys.
 
-   | Name | Value | Purpose |
-   |---|---|---|
-   | `GITHUB_TOKEN` | a personal access token (classic, `public_repo` scope) | Increases the GitHub API rate limit from 60 to 5,000 requests/hour during prebuild. Harmless to omit for a whitelist of a few public repos, but nice to have. |
+1. Push the `feat/astro-site-v2` branch (already done) and merge it
+   to `master` via PR. The workflow only runs on master pushes.
+2. Open the repo on GitHub → **Settings** → **Pages**.
+3. Under **Build and deployment**, set **Source** to
+   **GitHub Actions** (not "Deploy from a branch"). This delegates
+   deploy control to the workflow file.
+4. (Optional) Open the repo → **Actions** tab → pick the
+   "Deploy site-v2 to GitHub Pages" workflow → **Run workflow** on
+   master to do a test deploy without needing a commit.
 
-7. Click **Deploy**. First build takes ~40 seconds. You get a free
-   Vercel subdomain like `kyleyhw.vercel.app` or a project-scoped
-   equivalent.
+Within ~2 minutes of the workflow completing, the site is live at the
+URL above.
 
-Every subsequent push to `master` triggers a production deploy.
-Every pull request gets its own preview URL.
+## What the workflow does
 
-## One-time setup — Vercel CLI (faster for initial testing)
+`.github/workflows/deploy.yml`:
 
-If you prefer to deploy from the local machine before setting up git
-integration:
+1. Triggers on pushes to `master` that touch `site-v2/**` or the
+   workflow itself, plus manual runs from the Actions tab.
+2. Checks out the repo, sets up Node 22 with npm caching keyed to
+   `site-v2/package-lock.json`.
+3. Runs `npm ci` inside `site-v2/`.
+4. Runs `npm run build`, which:
+   - Executes the `prebuild` hook —
+     `scripts/fetch-github-repos.mjs` — to refresh project metadata
+     from the GitHub API. The built-in `GITHUB_TOKEN` secret is
+     passed in so the script uses the authenticated 5,000 req/hour
+     limit instead of the unauthenticated 60 req/hour IP pool shared
+     across Actions runners.
+   - Runs `astro build`, emitting `site-v2/dist/`.
+5. Uploads `site-v2/dist` as a Pages artifact.
+6. The `deploy` job consumes the artifact and publishes.
 
-```bash
-npm install -g vercel
-cd site-v2
-vercel login          # opens browser for first-time auth
-vercel                # follow prompts; pick the project scope
-vercel --prod         # promote a preview to production
-```
-
-## Custom domain
-
-Once you buy a domain (Cloudflare Registrar, Porkbun, Namecheap ~
-$10-15/yr for a `.com`):
-
-1. Vercel project → **Settings → Domains → Add**, enter your
-   domain.
-2. Vercel tells you which DNS records to create at your registrar
-   (either an `A` record to Vercel's IP or a `CNAME` to
-   `cname.vercel-dns.com`).
-3. DNS propagates within ~15 minutes. TLS is auto-provisioned via
-   Let's Encrypt — no action needed on your part.
-
-No rebuild is required when swapping domains.
+The workflow has `concurrency: pages` with
+`cancel-in-progress: true`, so only the latest master commit is ever
+deployed.
 
 ## Local production preview
 
-Before deploying, confirm the production bundle works:
+Before pushing, confirm the production bundle works:
 
 ```bash
 cd site-v2
 npm run build       # runs GitHub sync then `astro build`
-npm run preview     # serves dist/ on http://localhost:4321
+npm run preview     # serves dist/ on http://localhost:4321/personal_website/
 ```
 
-`npm run preview` is a simple static server — it does not run the
-dev watcher. What you see there is exactly what Vercel will serve.
+`npm run preview` is a static file server. The URL must include the
+`/personal_website/` suffix because `base` is set — hitting
+`http://localhost:4321/` alone will 404.
 
-## What happens on every build
+## Custom domain
 
-1. `prebuild` hook runs `scripts/fetch-github-repos.mjs`, which:
-   - Reads `src/content/site.yaml` for `github_username` and
-     `featured_repos`.
-   - Hits `GET /repos/:owner/:repo` via `@octokit/rest` for each
-     whitelisted repo.
-   - Writes one Markdown file per repo to
-     `src/content/projects/`, preserving `description_override`
-     and `badge` fields from any existing file, and leaving
-     `manual: true` files untouched.
-2. `astro build` runs, reads the content collections, and generates
-   static HTML into `dist/`.
-3. Vercel uploads `dist/` to its edge network.
+When you buy a domain (Cloudflare Registrar, Porkbun, Namecheap ~
+$10-15/yr):
+
+1. Create a file `site-v2/public/CNAME` containing a single line —
+   your domain, e.g. `kyle-wong.com`. Commit and push.
+2. Update `astro.config.mjs`:
+   - `site: "https://kyle-wong.com"`
+   - `base: "/"` (custom domains serve from root; the subpath
+     disappears)
+3. Grep and update any internal links that were pinned to
+   `/personal_website/…`. Most of the site uses the `asset()` helper,
+   so there should be nothing to change, but double-check if unsure.
+4. On GitHub → Settings → Pages → **Custom domain**, enter the same
+   domain and save. GitHub writes the DNS challenge record you need.
+5. At your registrar, create either:
+   - An `A` record pointing to GitHub Pages IPs:
+     `185.199.108.153`, `185.199.109.153`, `185.199.110.153`,
+     `185.199.111.153`, **or**
+   - A `CNAME` record pointing to `kyleyhw.github.io`.
+6. Back on GitHub, wait for **DNS check successful** and tick
+   **Enforce HTTPS**. Let's Encrypt certificates are auto-issued.
+
+Total propagation is typically 15-60 minutes.
 
 ## Failure modes and mitigations
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Build errors with "rate limit exceeded" on the GitHub API | Vercel build IP shares a 60 req/hour pool with other users | Set `GITHUB_TOKEN` env var (see above). |
-| A private repo appears with fetch error | Script treats all whitelisted entries as public | Move the entry out of `featured_repos`, create a manual `.md` file with `manual: true`. |
-| Content schema validation error at build time | Missing required frontmatter field on a content file | Check `src/content.config.ts` schemas and correct the Markdown file. |
-| Fonts flash briefly before loading | `@fontsource` files download on first paint | Already mitigated by `font-display: swap` in the fontsource CSS. Acceptable behaviour. |
+| Workflow fails with "rate limit exceeded" on the GitHub API | Build ran with insufficient auth | Confirm `GITHUB_TOKEN` is being passed to the build step (already configured in the workflow). |
+| A private repo appears with fetch error | Script treats all whitelisted entries as public; built-in `GITHUB_TOKEN` cannot read private repos either | Move the entry out of `featured_repos`, create a manual `.md` file with `manual: true`. |
+| Content schema validation error at build time | Missing or malformed frontmatter in a content file | Run `npm run build` locally; the error message will point to the file and the field. |
+| 404 on profile picture or favicon | Base path not applied to a hardcoded asset URL | All internal assets must go through the `asset()` helper defined in `Layout.astro` and `index.astro`. Grep for `href="/` and `src="/` to catch new ones. |
+| Fonts flash briefly before loading | `@fontsource` files download on first paint | Already mitigated by `font-display: swap`. Acceptable default behaviour. |
 
 ## Cost
 
-Free tier on Vercel covers:
+Free for public repositories. Limits that will never bite a personal
+portfolio:
 
-- 100 GB bandwidth/month
-- Unlimited build minutes for open-source / non-commercial projects
-- Automatic HTTPS and global CDN
-
-A personal portfolio will not come close to these limits.
+- 1 GB per site
+- 100 GB bandwidth/month (soft limit)
+- 10 builds/hour (workflow runs — we won't push that often)

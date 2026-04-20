@@ -1,0 +1,72 @@
+name: Deploy site-v2 to GitHub Pages
+
+# Triggers:
+# - every push to master (production deploy)
+# - manual runs via the Actions tab (e.g. to refresh GitHub-repo metadata
+#   without a new commit, since the prebuild hook re-fetches repo data)
+on:
+  push:
+    branches: [master]
+    paths:
+      - "site-v2/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+# Permissions required for the deploy-pages action. contents:read is
+# default, pages:write lets us publish, id-token:write lets the action
+# mint an OIDC token for authenticated upload.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; cancel in-progress runs when a new push lands.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site-v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: site-v2/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        # The prebuild hook (scripts/fetch-github-repos.mjs) calls the
+        # GitHub REST API. Unauthenticated runs share a 60/hour IP pool
+        # that can be exhausted on busy Actions runners. The built-in
+        # GITHUB_TOKEN raises the limit to 5000/hour and is scoped to
+        # public-repo read — perfectly safe for this read-only fetch.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site-v2/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
