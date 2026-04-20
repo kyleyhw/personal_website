@@ -307,47 +307,53 @@ const proseClass = [
                   )}
                 </div>
 
-                {/* Overlay — fixed to the viewport, reveals on group hover.
-                    Media sizes to its natural aspect ratio (max 70vw wide,
-                    85vh tall) so there are no black bars regardless of
-                    portrait vs. landscape input. Details float beside the
-                    media in a rounded elevated card. */}
+                {/* Overlay — fixed to the viewport. The outer div centres
+                    the inner row; the inner row caps at max-w-[92vw] /
+                    max-h-[92vh] so nothing ever escapes the viewport. The
+                    media cell is flex-1 with min-w-0 / min-h-0 so it takes
+                    the remaining space after the fixed-width aside, and the
+                    media itself (max-w-full max-h-full, w-auto h-auto)
+                    scales to fit that cell at its own aspect ratio — no
+                    black bars regardless of orientation. */}
                 <div
-                  class="fixed inset-0 z-50 flex items-center justify-center px-[4vw]
-                         bg-black/70 backdrop-blur-sm
+                  class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-[4vh_4vw]
+                         bg-black/80 backdrop-blur-sm
                          opacity-0 pointer-events-none
                          group-hover:opacity-100 group-hover:pointer-events-auto
                          motion-safe:transition-opacity duration-500 ease-out"
                 >
                   <div
-                    class="flex flex-col lg:flex-row items-center justify-center gap-6 max-w-full max-h-full
+                    class="flex flex-col lg:flex-row items-stretch justify-center gap-5
+                           w-full max-w-[92vw] max-h-[92vh]
                            motion-safe:scale-95 motion-safe:group-hover:scale-100
                            transition-transform duration-500 ease-out"
                   >
-                    {entry.isVideo ? (
-                      <video
-                        data-climbing-overlay-video={i}
-                        src={asset(entry.media)}
-                        class="max-w-[70vw] max-h-[85vh] w-auto h-auto rounded-xl shadow-2xl"
-                        playsinline
-                        muted
-                        loop
-                        controls
-                        preload="metadata"
-                      />
-                    ) : (
-                      <img
-                        src={asset(entry.media)}
-                        alt={entry.title}
-                        class="max-w-[70vw] max-h-[85vh] w-auto h-auto rounded-xl shadow-2xl"
-                      />
-                    )}
+                    <div class="flex-1 min-w-0 min-h-0 flex items-center justify-center">
+                      {entry.isVideo ? (
+                        <video
+                          data-climbing-overlay-video={i}
+                          src={asset(entry.media)}
+                          class="max-w-full max-h-full w-auto h-auto rounded-xl shadow-2xl"
+                          playsinline
+                          muted
+                          loop
+                          controls
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={asset(entry.media)}
+                          alt={entry.title}
+                          class="max-w-full max-h-full w-auto h-auto rounded-xl shadow-2xl"
+                        />
+                      )}
+                    </div>
 
                     <aside
-                      class="w-80 flex-shrink-0 bg-bg-elevated rounded-xl p-6 shadow-2xl
-                             max-h-[85vh] overflow-y-auto border border-fg-subtle/20"
+                      class="w-full lg:w-72 flex-shrink-0 bg-bg-elevated rounded-xl p-6 shadow-2xl
+                             overflow-y-auto border border-fg-subtle/20"
                     >
-                      <h3 class="font-serif font-medium text-3xl leading-tight text-fg">
+                      <h3 class="font-serif font-medium text-2xl leading-tight text-fg">
                         {entry.title}
                       </h3>
                       {(entry.location || entry.date) && (
@@ -363,7 +369,7 @@ const proseClass = [
                         </p>
                       )}
                       {entry.description && (
-                        <p class="text-fg-muted text-base leading-relaxed mt-6 whitespace-pre-line">
+                        <p class="text-fg-muted text-sm leading-relaxed mt-5 whitespace-pre-line">
                           {entry.description}
                         </p>
                       )}
