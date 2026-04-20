@@ -334,34 +334,31 @@ const proseClass = [
                  motion-safe:transition-opacity duration-500 ease-out"
         >
           <div
-            class="climbing-overlay-inner flex flex-col lg:flex-row items-stretch justify-center gap-5
-                   w-full max-w-[92vw] max-h-[92vh]
+            class="climbing-overlay-inner flex flex-col lg:flex-row items-center justify-center gap-4
                    motion-safe:scale-95 transition-transform duration-500 ease-out"
           >
-            <div class="flex-1 min-w-0 min-h-0 flex items-center justify-center">
-              {entry.isVideo ? (
-                <video
-                  data-climbing-overlay-video={i}
-                  src={asset(entry.media)}
-                  class="max-w-full max-h-full w-auto h-auto rounded-xl shadow-2xl"
-                  playsinline
-                  muted
-                  loop
-                  controls
-                  preload="metadata"
-                />
-              ) : (
-                <img
-                  src={asset(entry.media)}
-                  alt={entry.title}
-                  class="max-w-full max-h-full w-auto h-auto rounded-xl shadow-2xl"
-                />
-              )}
-            </div>
+            {entry.isVideo ? (
+              <video
+                data-climbing-overlay-video={i}
+                src={asset(entry.media)}
+                class="max-w-[60vw] max-h-[88vh] w-auto h-auto rounded-xl shadow-2xl"
+                playsinline
+                muted
+                loop
+                controls
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={asset(entry.media)}
+                alt={entry.title}
+                class="max-w-[60vw] max-h-[88vh] w-auto h-auto rounded-xl shadow-2xl"
+              />
+            )}
 
             <aside
               class="w-full lg:w-72 flex-shrink-0 bg-bg-elevated rounded-xl p-6 shadow-2xl
-                     overflow-y-auto border border-fg-subtle/20"
+                     max-h-[88vh] overflow-y-auto border border-fg-subtle/20"
             >
               <h3 class="font-serif font-medium text-2xl leading-tight text-fg">
                 {entry.title}
