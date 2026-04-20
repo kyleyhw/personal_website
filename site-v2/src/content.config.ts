@@ -118,22 +118,30 @@ const personal = defineCollection({
 });
 
 /* ============================================================
-   Climbing — one entry per clip. `video` is a path relative
-   to public/ (e.g. "/personal_website/climbing/my_clip.mp4").
-   Drop mp4 files into public/climbing/ and create a matching
-   markdown file here with frontmatter.
+   Climbing — one entry per clip or photo. Each entry supplies
+   exactly one of `video` (mp4) or `image` (jpg/png/webp); if
+   both are provided, video wins. Paths resolve relative to
+   public/, so include the base prefix on GitHub Pages
+   (e.g. "/personal_website/climbing/my_clip.mp4"). Drop files
+   into public/climbing/ and create a matching markdown entry
+   here with frontmatter.
    ============================================================ */
 const climbing = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/climbing" }),
-  schema: z.object({
-    title: z.string(),
-    location: z.string().optional(),
-    date: z.coerce.date().optional(),
-    video: z.string(),
-    poster: z.string().optional(),
-    description: z.string().optional(),
-    priority: z.number().default(0),
-  }),
+  schema: z
+    .object({
+      title: z.string(),
+      location: z.string().optional(),
+      date: z.coerce.date().optional(),
+      video: z.string().optional(),
+      image: z.string().optional(),
+      poster: z.string().optional(),
+      description: z.string().optional(),
+      priority: z.number().default(0),
+    })
+    .refine((d) => d.video || d.image, {
+      message: "climbing entry must specify either `video` or `image`",
+    }),
 });
 
 export const collections = {

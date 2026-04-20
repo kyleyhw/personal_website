@@ -63,7 +63,7 @@ const proseClass = [
       profileSrc={asset("profile_pic.jpeg")}
     />
 
-    <main class="lg:py-24 space-y-24 pb-24">
+    <main class="lg:py-24 space-y-16 pb-24">
       {AboutContent && (
         <Section id="about" label="About">
           <div class={proseClass}><AboutContent /></div>
@@ -187,8 +187,12 @@ const proseClass = [
       <Section id="climbing" label="Climbing">
         {climbing.length === 0 ? (
           <p class="text-fg-muted text-sm max-w-xl">
-            Clips coming soon. Drop <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.mp4</code>
-            files into <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">public/climbing/</code>
+            Clips and photos coming soon. Drop media
+            (<code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.mp4</code>,
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.jpg</code>,
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.png</code>,
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.webp</code>)
+            into <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">public/climbing/</code>
             and create matching markdown entries in
             <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">src/content/climbing/</code>.
           </p>
@@ -197,17 +201,26 @@ const proseClass = [
             {climbing.map((entry) => (
               <li class="group">
                 <div class="aspect-video overflow-hidden rounded border border-fg-subtle/30 bg-bg-elevated">
-                  <video
-                    src={entry.data.video}
-                    poster={entry.data.poster}
-                    class="w-full h-full object-cover"
-                    playsinline
-                    muted
-                    loop
-                    autoplay
-                    preload="metadata"
-                    controls
-                  />
+                  {entry.data.video ? (
+                    <video
+                      src={entry.data.video}
+                      poster={entry.data.poster}
+                      class="w-full h-full object-cover"
+                      playsinline
+                      muted
+                      loop
+                      autoplay
+                      preload="metadata"
+                      controls
+                    />
+                  ) : (
+                    <img
+                      src={entry.data.image}
+                      alt={entry.data.title}
+                      loading="lazy"
+                      class="w-full h-full object-cover"
+                    />
+                  )}
                 </div>
                 <div class="mt-3">
                   <h3 class="font-serif font-medium text-lg text-fg">{entry.data.title}</h3>
