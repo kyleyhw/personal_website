@@ -4,15 +4,11 @@ import Layout from "../layouts/Layout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import Section from "../components/Section.astro";
 
-// Normalise base-prefixed asset URLs — see Layout.astro for rationale.
 const asset = (path: string) =>
   (import.meta.env.BASE_URL + "/" + path).replace(/\/+/g, "/");
 
 const site = await getEntry("site", "main");
 if (!site) throw new Error("site.main not found — check src/content/site.yaml");
-
-const aboutEntry = await getEntry("about", "main");
-const { Content: AboutContent } = aboutEntry ? await render(aboutEntry) : { Content: null };
 
 const education = (await getCollection("education")).sort(
   (a, b) => (b.data.endDate ?? new Date()).getTime() - (a.data.endDate ?? new Date()).getTime(),
@@ -23,8 +19,32 @@ const experience = (await getCollection("experience")).sort(
 const projects = (await getCollection("projects")).sort(
   (a, b) => b.data.priority - a.data.priority,
 );
+const climbing = (await getCollection("climbing")).sort(
+  (a, b) => b.data.priority - a.data.priority,
+);
+
+const awardsEntry = await getEntry("awards", "main");
+const coursesEntry = await getEntry("courses", "main");
+const skillsEntry = await getEntry("skills", "main");
+const personalEntry = await getEntry("personal", "main");
+
+const { Content: AwardsContent } = awardsEntry ? await render(awardsEntry) : { Content: null };
+const { Content: CoursesContent } = coursesEntry ? await render(coursesEntry) : { Content: null };
+const { Content: SkillsContent } = skillsEntry ? await render(skillsEntry) : { Content: null };
+const { Content: PersonalContent } = personalEntry ? await render(personalEntry) : { Content: null };
 
 const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
+
+// Prose styling shared across singleton-content sections. h2 subheads
+// come through as serif medium; lists are bullet-aligned with muted
+// body text; strong-text inherits fg so bolded labels pop.
+const proseClass = [
+  "max-w-2xl text-fg leading-relaxed",
+  "[&>p]:mb-5",
+  "[&_h2]:font-serif [&_h2]:font-medium [&_h2]:text-2xl [&_h2]:text-fg [&_h2]:mt-12 [&_h2]:mb-4 [&_h2:first-child]:mt-0",
+  "[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_ul]:text-fg-muted",
+  "[&_strong]:text-fg [&_strong]:font-medium",
+].join(" ");
 ---
 
 <Layout title={`${site.data.name} — ${site.data.tagline}`} description={site.data.tagline}>
@@ -42,20 +62,10 @@ const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
     />
 
     <main class="lg:py-24 space-y-24 pb-24">
-      {AboutContent && (
-        <Section id="about" label="About">
-          <div
-            class="max-w-2xl text-fg leading-relaxed [&_p]:mb-5 [&_h2]:font-serif [&_h2]:font-medium [&_h2]:text-xl [&_h2]:text-fg [&_h2]:mt-10 [&_h2]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-1.5 [&_ul]:text-fg-muted [&_strong]:text-fg [&_strong]:font-medium"
-          >
-            <AboutContent />
-          </div>
-        </Section>
-      )}
-
       <Section id="education" label="Education">
         <ul class="space-y-10 max-w-2xl">
           {education.map((entry) => (
-            <li class="group">
+            <li>
               <div class="flex justify-between items-baseline gap-4 mb-1">
                 <h3 class="font-serif font-medium text-xl text-fg">{entry.data.institution}</h3>
                 <span class="font-mono text-xs text-fg-subtle whitespace-nowrap">
@@ -77,7 +87,7 @@ const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
           {experience.map(async (entry) => {
             const { Content } = await render(entry);
             return (
-              <li class="group">
+              <li>
                 <div class="flex justify-between items-baseline gap-4 mb-1">
                   <h3 class="font-serif font-medium text-xl text-fg">{entry.data.role}</h3>
                   <span class="font-mono text-xs text-fg-subtle whitespace-nowrap">
@@ -140,6 +150,76 @@ const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
             </li>
           ))}
         </ul>
+      </Section>
+
+      {AwardsContent && (
+        <Section id="awards" label="Awards">
+          <div class={proseClass}><AwardsContent /></div>
+        </Section>
+      )}
+
+      {CoursesContent && (
+        <Section id="courses" label="Courses">
+          <div class={proseClass}><CoursesContent /></div>
+        </Section>
+      )}
+
+      {SkillsContent && (
+        <Section id="skills" label="Skills">
+          <div class={proseClass}><SkillsContent /></div>
+        </Section>
+      )}
+
+      {PersonalContent && (
+        <Section id="personal" label="Personal">
+          <div class={proseClass}><PersonalContent /></div>
+        </Section>
+      )}
+
+      <Section id="climbing" label="Climbing">
+        {climbing.length === 0 ? (
+          <p class="text-fg-muted text-sm max-w-xl">
+            Clips coming soon. Drop <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">.mp4</code>
+            files into <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">public/climbing/</code>
+            and create matching markdown entries in
+            <code class="font-mono text-xs bg-bg-elevated px-1.5 py-0.5 rounded">src/content/climbing/</code>.
+          </p>
+        ) : (
+          <ul class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
+            {climbing.map((entry) => (
+              <li class="group">
+                <div class="aspect-video overflow-hidden rounded border border-fg-subtle/30 bg-bg-elevated">
+                  <video
+                    src={entry.data.video}
+                    poster={entry.data.poster}
+                    class="w-full h-full object-cover"
+                    playsinline
+                    muted
+                    loop
+                    autoplay
+                    preload="metadata"
+                    controls
+                  />
+                </div>
+                <div class="mt-3">
+                  <h3 class="font-serif font-medium text-lg text-fg">{entry.data.title}</h3>
+                  {(entry.data.location || entry.data.date) && (
+                    <p class="font-mono text-xs text-fg-subtle mt-0.5">
+                      {entry.data.location}
+                      {entry.data.location && entry.data.date && " · "}
+                      {entry.data.date && fmtYear(entry.data.date)}
+                    </p>
+                  )}
+                  {entry.data.description && (
+                    <p class="text-fg-muted text-sm mt-2 leading-relaxed">
+                      {entry.data.description}
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
 
       <footer class="pt-12 font-mono text-xs text-fg-subtle">
