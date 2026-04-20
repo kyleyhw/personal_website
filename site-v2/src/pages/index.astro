@@ -282,12 +282,13 @@ const proseClass = [
         ) : (
           <ul class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl">
             {climbing.map((entry, i) => (
-              <li class="group relative" data-climbing-item={i}>
-                {/* Grid tile — always visible. */}
+              <li>
                 <div
+                  data-climbing-tile={i}
+                  aria-label={entry.title}
                   class="block w-full aspect-[4/3] overflow-hidden rounded-xl border border-fg-subtle/30 bg-bg-elevated
-                         transition-[transform,border-color,box-shadow] duration-300 ease-out
-                         motion-safe:group-hover:scale-[1.02] group-hover:border-accent/60 group-hover:shadow-lg"
+                         transition-[transform,border-color,box-shadow] duration-300 ease-out cursor-pointer
+                         motion-safe:hover:scale-[1.02] hover:border-accent/60 hover:shadow-lg"
                 >
                   {entry.isVideo ? (
                     <video
@@ -306,76 +307,6 @@ const proseClass = [
                     />
                   )}
                 </div>
-
-                {/* Overlay — fixed to the viewport. The outer div centres
-                    the inner row; the inner row caps at max-w-[92vw] /
-                    max-h-[92vh] so nothing ever escapes the viewport. The
-                    media cell is flex-1 with min-w-0 / min-h-0 so it takes
-                    the remaining space after the fixed-width aside, and the
-                    media itself (max-w-full max-h-full, w-auto h-auto)
-                    scales to fit that cell at its own aspect ratio — no
-                    black bars regardless of orientation. */}
-                <div
-                  class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-[4vh_4vw]
-                         bg-black/80 backdrop-blur-sm
-                         opacity-0 pointer-events-none
-                         group-hover:opacity-100 group-hover:pointer-events-auto
-                         motion-safe:transition-opacity duration-500 ease-out"
-                >
-                  <div
-                    class="flex flex-col lg:flex-row items-stretch justify-center gap-5
-                           w-full max-w-[92vw] max-h-[92vh]
-                           motion-safe:scale-95 motion-safe:group-hover:scale-100
-                           transition-transform duration-500 ease-out"
-                  >
-                    <div class="flex-1 min-w-0 min-h-0 flex items-center justify-center">
-                      {entry.isVideo ? (
-                        <video
-                          data-climbing-overlay-video={i}
-                          src={asset(entry.media)}
-                          class="max-w-full max-h-full w-auto h-auto rounded-xl shadow-2xl"
-                          playsinline
-                          muted
-                          loop
-                          controls
-                          preload="metadata"
-                        />
-                      ) : (
-                        <img
-                          src={asset(entry.media)}
-                          alt={entry.title}
-                          class="max-w-full max-h-full w-auto h-auto rounded-xl shadow-2xl"
-                        />
-                      )}
-                    </div>
-
-                    <aside
-                      class="w-full lg:w-72 flex-shrink-0 bg-bg-elevated rounded-xl p-6 shadow-2xl
-                             overflow-y-auto border border-fg-subtle/20"
-                    >
-                      <h3 class="font-serif font-medium text-2xl leading-tight text-fg">
-                        {entry.title}
-                      </h3>
-                      {(entry.location || entry.date) && (
-                        <p class="font-mono text-xs uppercase tracking-wider text-fg-muted mt-3">
-                          {entry.location}
-                          {entry.location && entry.date && " · "}
-                          {entry.date &&
-                            entry.date.toLocaleDateString("en-GB", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                        </p>
-                      )}
-                      {entry.description && (
-                        <p class="text-fg-muted text-sm leading-relaxed mt-5 whitespace-pre-line">
-                          {entry.description}
-                        </p>
-                      )}
-                    </aside>
-                  </div>
-                </div>
               </li>
             ))}
           </ul>
@@ -388,26 +319,167 @@ const proseClass = [
     </main>
   </div>
 
-  {/* Climbing: overlay video play/pause is tied to hover on the wrapping
-      <li>. mouseenter/mouseleave on the li fire when the pointer enters
-      the element OR any of its descendants (including the fixed overlay)
-      and exits ALL of them, so the video plays for as long as either the
-      grid tile or its overlay is hovered. */}
+  {/* Climbing overlays live outside <main> to escape the
+      .reveal containing block (its transform + will-change would
+      otherwise constrain position:fixed children to the section's
+      box). JS below coordinates visibility with the tile hover. */}
+  {climbing.length > 0 && (
+    <div aria-hidden="true">
+      {climbing.map((entry, i) => (
+        <div
+          data-climbing-overlay={i}
+          class="climbing-overlay fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-[4vh_4vw]
+                 bg-black/80 backdrop-blur-sm
+                 opacity-0 pointer-events-none
+                 motion-safe:transition-opacity duration-500 ease-out"
+        >
+          <div
+            class="climbing-overlay-inner flex flex-col lg:flex-row items-stretch justify-center gap-5
+                   w-full max-w-[92vw] max-h-[92vh]
+                   motion-safe:scale-95 transition-transform duration-500 ease-out"
+          >
+            <div class="flex-1 min-w-0 min-h-0 flex items-center justify-center">
+              {entry.isVideo ? (
+                <video
+                  data-climbing-overlay-video={i}
+                  src={asset(entry.media)}
+                  class="max-w-full max-h-full w-auto h-auto rounded-xl shadow-2xl"
+                  playsinline
+                  muted
+                  loop
+                  controls
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  src={asset(entry.media)}
+                  alt={entry.title}
+                  class="max-w-full max-h-full w-auto h-auto rounded-xl shadow-2xl"
+                />
+              )}
+            </div>
+
+            <aside
+              class="w-full lg:w-72 flex-shrink-0 bg-bg-elevated rounded-xl p-6 shadow-2xl
+                     overflow-y-auto border border-fg-subtle/20"
+            >
+              <h3 class="font-serif font-medium text-2xl leading-tight text-fg">
+                {entry.title}
+              </h3>
+              {(entry.location || entry.date) && (
+                <p class="font-mono text-xs uppercase tracking-wider text-fg-muted mt-3">
+                  {entry.location}
+                  {entry.location && entry.date && " · "}
+                  {entry.date &&
+                    entry.date.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                </p>
+              )}
+              {entry.description && (
+                <p class="text-fg-muted text-sm leading-relaxed mt-5 whitespace-pre-line">
+                  {entry.description}
+                </p>
+              )}
+            </aside>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <style>
+    .climbing-overlay.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .climbing-overlay.is-active .climbing-overlay-inner {
+      transform: none;
+    }
+  </style>
+
+  {/* Climbing hover coordination. The overlays live at the root of
+      the page rather than inside each grid cell, so CSS group-hover
+      can't reach them. We set .is-active via JS on mouseenter of
+      either the tile OR the overlay itself; mouseleave schedules a
+      short-delayed hide so the cursor can transition between them
+      without the overlay flickering off. */}
   <script is:inline>
     (function () {
-      var items = document.querySelectorAll("[data-climbing-item]");
-      items.forEach(function (li) {
-        var video = li.querySelector("[data-climbing-overlay-video]");
-        if (!video) return;
-        li.addEventListener("mouseenter", function () {
-          video.currentTime = 0;
-          var p = video.play();
-          if (p && typeof p.catch === "function") p.catch(function () {});
+      var tiles = document.querySelectorAll("[data-climbing-tile]");
+      if (tiles.length === 0) return;
+
+      var hideTimer = null;
+      var activeOverlay = null;
+
+      function overlayFor(idx) {
+        return document.querySelector('[data-climbing-overlay="' + idx + '"]');
+      }
+
+      function playVideo(overlay) {
+        var v = overlay.querySelector("video");
+        if (!v) return;
+        v.currentTime = 0;
+        var p = v.play();
+        if (p && typeof p.catch === "function") p.catch(function () {});
+      }
+
+      function pauseVideo(overlay) {
+        var v = overlay.querySelector("video");
+        if (!v) return;
+        v.pause();
+        v.currentTime = 0;
+      }
+
+      function show(overlay) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+        if (activeOverlay && activeOverlay !== overlay) {
+          activeOverlay.classList.remove("is-active");
+          pauseVideo(activeOverlay);
+        }
+        activeOverlay = overlay;
+        overlay.classList.add("is-active");
+        playVideo(overlay);
+      }
+
+      function scheduleHide() {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(function () {
+          if (activeOverlay) {
+            activeOverlay.classList.remove("is-active");
+            pauseVideo(activeOverlay);
+            activeOverlay = null;
+          }
+        }, 120);
+      }
+
+      tiles.forEach(function (tile) {
+        var idx = tile.getAttribute("data-climbing-tile");
+        var overlay = overlayFor(idx);
+        if (!overlay) return;
+
+        tile.addEventListener("mouseenter", function () {
+          show(overlay);
         });
-        li.addEventListener("mouseleave", function () {
-          video.pause();
-          video.currentTime = 0;
+        tile.addEventListener("mouseleave", scheduleHide);
+
+        overlay.addEventListener("mouseenter", function () {
+          clearTimeout(hideTimer);
+          hideTimer = null;
         });
+        overlay.addEventListener("mouseleave", scheduleHide);
+      });
+
+      // Close on Esc — nice to have even though there's no button.
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && activeOverlay) {
+          activeOverlay.classList.remove("is-active");
+          pauseVideo(activeOverlay);
+          activeOverlay = null;
+        }
       });
     })();
   </script>
