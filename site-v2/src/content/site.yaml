@@ -1,0 +1,21 @@
+main:
+  name: Kyle Wong
+  tagline: Building with code, data, and rigour.
+  location: ""
+
+  socials:
+    email: kyleyhw@gmail.com
+    github: https://github.com/kyleyhw
+    linkedin: https://www.linkedin.com/in/kyle-wong-a95030281/
+
+  cv_url: https://github.com/kyleyhw/kyle_wong_cv/raw/main/kyle_wong_cv_apr_2026_industry.pdf
+
+  github_username: kyleyhw
+
+  # Ordered high-to-low priority. mercury_strategies is a private repo —
+  # it is authored as a manual markdown entry under src/content/projects/
+  # and is NOT fetched by the sync script; it is listed here purely for
+  # reference.
+  featured_repos:
+    - quant_core
+    - sound_simulation

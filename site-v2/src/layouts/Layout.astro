@@ -1,0 +1,82 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Kyle Wong",
+  description = "Building with code, data, and rigour.",
+} = Astro.props;
+
+// Normalise base-prefixed asset URLs. import.meta.env.BASE_URL can arrive
+// with or without a trailing slash depending on Astro's trailingSlash
+// config and the base option form. Normalise to avoid breakages like
+// `/personal_websitefavicon.svg` missing a separator.
+const asset = (path: string) =>
+  (import.meta.env.BASE_URL + "/" + path).replace(/\/+/g, "/");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={asset("favicon.svg")} />
+    <title>{title}</title>
+
+    {/* FOUC-safe theme init — runs synchronously before paint. */}
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var theme = stored || (prefersDark ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <slot />
+
+    {/* Scroll-reveal observer — adds .is-visible to .reveal elements on first
+        intersection. Reduced-motion users skip observation and see final state. */}
+    <script is:inline>
+      (function () {
+        var reveals = document.querySelectorAll(".reveal");
+        if (reveals.length === 0) return;
+
+        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reduce) {
+          reveals.forEach(function (el) {
+            el.classList.add("is-visible");
+          });
+          return;
+        }
+
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                io.unobserve(entry.target);
+              }
+            });
+          },
+          { rootMargin: "0px 0px -8% 0px", threshold: 0.12 },
+        );
+
+        reveals.forEach(function (el) {
+          io.observe(el);
+        });
+      })();
+    </script>
+  </body>
+</html>

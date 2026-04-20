@@ -1,0 +1,173 @@
+---
+import Socials from "./Socials.astro";
+import ThemeToggle from "./ThemeToggle.astro";
+
+interface Props {
+  name: string;
+  tagline: string;
+  email: string;
+  github: string;
+  linkedin: string;
+  cvUrl: string;
+  profileSrc?: string;
+}
+
+const { name, tagline, email, github, linkedin, cvUrl, profileSrc } = Astro.props;
+
+const navItems = [
+  { id: "about", label: "About" },
+  { id: "education", label: "Education" },
+  { id: "experience", label: "Experience" },
+  { id: "projects", label: "Projects" },
+];
+
+// Build the word-staggered tagline as an HTML string. Each word becomes an
+// inline-block span with a --i custom property that drives its staggered
+// animation delay via the .word class in global.css.
+const taglineHtml = tagline
+  .split(/\s+/)
+  .filter(Boolean)
+  .map((word, i) => `<span class="word" style="--i:${i}">${word}</span>`)
+  .join(" ");
+---
+
+<header
+  class="lg:sticky lg:top-0 lg:h-screen lg:max-h-screen lg:py-24 lg:flex lg:flex-col lg:justify-between py-12"
+>
+  <div>
+    {profileSrc && (
+      <img
+        src={profileSrc}
+        alt={name}
+        width="96"
+        height="96"
+        class="blur-in w-24 h-24 rounded-full object-cover mb-8 ring-1 ring-fg-subtle/30"
+      />
+    )}
+
+    <h1
+      class="load-fade-up font-serif font-medium text-5xl leading-[1.05] tracking-tight text-fg mb-3 serif-display"
+      style="--i: 1"
+    >
+      {name}
+    </h1>
+    <p
+      class="font-serif italic text-lg text-fg-muted mb-12 max-w-xs"
+      set:html={taglineHtml}
+    />
+
+    <nav aria-label="Section navigation" class="hidden lg:block">
+      <ul class="space-y-3">
+        {navItems.map((item, idx) => (
+          <li class="load-fade-up" style={`--i: ${4 + idx}`}>
+            <a
+              href={`#${item.id}`}
+              data-nav-link={item.id}
+              class="group inline-flex items-center gap-4 font-mono text-xs uppercase tracking-[0.14em] text-fg-subtle hover:text-fg transition-colors duration-200"
+            >
+              <span
+                data-nav-indicator
+                class="inline-block h-px w-8 bg-fg-subtle/50 transition-all duration-300 group-hover:w-12 group-hover:bg-fg"
+              ></span>
+              <span data-nav-label>{item.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+
+  <div class="mt-12 lg:mt-0 space-y-6">
+    <a
+      href={cvUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="load-fade-up inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-fg hover:text-accent transition-colors duration-200"
+      style="--i: 8"
+    >
+      View CV
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3">
+        <path d="M7 17L17 7M17 7H8M17 7V16" />
+      </svg>
+    </a>
+
+    <div class="load-fade-up flex items-center justify-between" style="--i: 9">
+      <Socials email={email} github={github} linkedin={linkedin} />
+      <ThemeToggle />
+    </div>
+  </div>
+</header>
+
+<script>
+  // Active-nav state: on every scroll (rAF-throttled) compute which section
+  // is "active" by picking the last one whose top has crossed an activation
+  // line at 30% of the viewport height. If no section has crossed yet
+  // (scrolled above everything), default to the first. This is robust at
+  // every scroll position, including above the first section and below
+  // the last — a pure IntersectionObserver approach drops state in those
+  // bands because no intersection events fire there.
+  (() => {
+    const links = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>("[data-nav-link]"),
+    );
+    if (links.length === 0) return;
+
+    const byId = new Map(links.map((l) => [l.dataset.navLink!, l]));
+    const orderedIds = Array.from(byId.keys());
+    const sections = orderedIds
+      .map((id) => document.getElementById(id))
+      .filter((s): s is HTMLElement => s !== null);
+    if (sections.length === 0) return;
+
+    let currentActive: string | null = null;
+
+    const setActive = (id: string) => {
+      if (id === currentActive) return;
+      currentActive = id;
+      for (const [sid, link] of byId) {
+        const active = sid === id;
+        const label = link.querySelector<HTMLElement>("[data-nav-label]");
+        const indicator = link.querySelector<HTMLElement>("[data-nav-indicator]");
+        link.classList.toggle("text-fg", active);
+        link.classList.toggle("text-fg-subtle", !active);
+        if (label) {
+          label.classList.toggle("text-accent", active);
+        }
+        if (indicator) {
+          indicator.classList.toggle("w-16", active);
+          indicator.classList.toggle("bg-accent", active);
+          indicator.classList.toggle("w-8", !active);
+          indicator.classList.toggle("bg-fg-subtle/50", !active);
+        }
+      }
+    };
+
+    const compute = () => {
+      const activationY = window.innerHeight * 0.3;
+      // Walk from first to last: last section whose top <= activationY wins.
+      // If no section has crossed, fall back to the first section.
+      let activeId = sections[0].id;
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= activationY) {
+          activeId = section.id;
+        } else {
+          break; // sections are in document order; once one hasn't crossed, the rest haven't.
+        }
+      }
+      setActive(activeId);
+    };
+
+    let rafId: number | null = null;
+    const schedule = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        compute();
+      });
+    };
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    compute();
+  })();
+</script>

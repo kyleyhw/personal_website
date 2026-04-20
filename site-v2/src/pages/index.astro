@@ -1,0 +1,151 @@
+---
+import { getCollection, getEntry, render } from "astro:content";
+import Layout from "../layouts/Layout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import Section from "../components/Section.astro";
+
+// Normalise base-prefixed asset URLs — see Layout.astro for rationale.
+const asset = (path: string) =>
+  (import.meta.env.BASE_URL + "/" + path).replace(/\/+/g, "/");
+
+const site = await getEntry("site", "main");
+if (!site) throw new Error("site.main not found — check src/content/site.yaml");
+
+const aboutEntry = await getEntry("about", "main");
+const { Content: AboutContent } = aboutEntry ? await render(aboutEntry) : { Content: null };
+
+const education = (await getCollection("education")).sort(
+  (a, b) => (b.data.endDate ?? new Date()).getTime() - (a.data.endDate ?? new Date()).getTime(),
+);
+const experience = (await getCollection("experience")).sort(
+  (a, b) => (b.data.endDate ?? new Date()).getTime() - (a.data.endDate ?? new Date()).getTime(),
+);
+const projects = (await getCollection("projects")).sort(
+  (a, b) => b.data.priority - a.data.priority,
+);
+
+const fmtYear = (d?: Date) => (d ? d.getFullYear().toString() : "Present");
+---
+
+<Layout title={`${site.data.name} — ${site.data.tagline}`} description={site.data.tagline}>
+  <div
+    class="mx-auto max-w-7xl px-6 md:px-12 lg:px-24 lg:grid lg:grid-cols-[minmax(0,24rem)_1fr] lg:gap-24"
+  >
+    <SiteHeader
+      name={site.data.name}
+      tagline={site.data.tagline}
+      email={site.data.socials.email}
+      github={site.data.socials.github}
+      linkedin={site.data.socials.linkedin}
+      cvUrl={site.data.cv_url}
+      profileSrc={asset("profile_pic.jpeg")}
+    />
+
+    <main class="lg:py-24 space-y-24 pb-24">
+      {AboutContent && (
+        <Section id="about" label="About">
+          <div
+            class="max-w-2xl text-fg leading-relaxed [&_p]:mb-5 [&_h2]:font-serif [&_h2]:font-medium [&_h2]:text-xl [&_h2]:text-fg [&_h2]:mt-10 [&_h2]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-1.5 [&_ul]:text-fg-muted [&_strong]:text-fg [&_strong]:font-medium"
+          >
+            <AboutContent />
+          </div>
+        </Section>
+      )}
+
+      <Section id="education" label="Education">
+        <ul class="space-y-10 max-w-2xl">
+          {education.map((entry) => (
+            <li class="group">
+              <div class="flex justify-between items-baseline gap-4 mb-1">
+                <h3 class="font-serif font-medium text-xl text-fg">{entry.data.institution}</h3>
+                <span class="font-mono text-xs text-fg-subtle whitespace-nowrap">
+                  {fmtYear(entry.data.startDate)}–{fmtYear(entry.data.endDate)}
+                </span>
+              </div>
+              <p class="text-fg-muted text-sm mb-1">{entry.data.degree}</p>
+              <p class="text-fg-subtle text-xs">{entry.data.location}</p>
+              {entry.data.honour && (
+                <p class="text-fg-muted text-xs italic mt-2">{entry.data.honour}</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section id="experience" label="Experience">
+        <ul class="space-y-10 max-w-2xl">
+          {experience.map(async (entry) => {
+            const { Content } = await render(entry);
+            return (
+              <li class="group">
+                <div class="flex justify-between items-baseline gap-4 mb-1">
+                  <h3 class="font-serif font-medium text-xl text-fg">{entry.data.role}</h3>
+                  <span class="font-mono text-xs text-fg-subtle whitespace-nowrap">
+                    {fmtYear(entry.data.startDate)}–{fmtYear(entry.data.endDate)}
+                  </span>
+                </div>
+                <p class="text-fg-muted text-sm mb-1">
+                  {entry.data.organization}
+                  {entry.data.supervisor && (
+                    <span class="text-fg-subtle"> · {entry.data.supervisor}</span>
+                  )}
+                </p>
+                <div class="text-fg-muted text-sm leading-relaxed mt-3 [&_p]:mb-2">
+                  <Content />
+                </div>
+                {entry.data.skills && (
+                  <div class="flex flex-wrap gap-1.5 mt-4">
+                    {entry.data.skills.map((s) => (
+                      <span class="font-mono text-[0.7rem] uppercase tracking-wider text-fg-subtle border border-fg-subtle/40 rounded px-2 py-0.5">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
+
+      <Section id="projects" label="Projects">
+        <ul class="space-y-8 max-w-2xl">
+          {projects.map((entry) => (
+            <li>
+              <a
+                href={entry.data.url ?? "#"}
+                target={entry.data.url ? "_blank" : undefined}
+                rel={entry.data.url ? "noopener noreferrer" : undefined}
+                class:list={[
+                  "group block border-t border-fg-subtle/30 pt-6 transition-colors duration-200",
+                  entry.data.url ? "hover:border-accent/60" : "cursor-default",
+                ]}
+              >
+                <div class="flex justify-between items-baseline gap-4 mb-2">
+                  <h3 class:list={[
+                    "font-serif font-medium text-xl text-fg transition-colors duration-200",
+                    entry.data.url && "group-hover:text-accent",
+                  ]}>
+                    {entry.data.name}
+                  </h3>
+                  <span class="font-mono text-xs text-fg-subtle whitespace-nowrap">
+                    {entry.data.badge ?? entry.data.language ?? "—"}
+                    {entry.data.stars ? ` · ${entry.data.stars}★` : ""}
+                  </span>
+                </div>
+                <p class="text-fg-muted text-sm leading-relaxed">
+                  {entry.data.description_override ?? entry.data.description}
+                </p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <footer class="pt-12 font-mono text-xs text-fg-subtle">
+        Built with Astro. Content is Markdown under
+        <code class="text-fg-muted">src/content/</code>.
+      </footer>
+    </main>
+  </div>
+</Layout>
