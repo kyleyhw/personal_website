@@ -1,0 +1,203 @@
+/* ============================================================
+   Self-hosted font imports
+   ============================================================ */
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* ============================================================
+   Tailwind v4
+   ============================================================ */
+@import "tailwindcss";
+
+/* ============================================================
+   Runtime palette tokens
+   Switchable at runtime via [data-theme="dark"] on <html>.
+   All Tailwind utilities route through these via @theme below,
+   so a single attribute change re-themes the whole document.
+   ============================================================ */
+:root {
+  --bg: #FAFAF7;
+  --bg-elevated: #FFFFFF;
+  --fg: #0A0A0A;
+  --fg-muted: #52525B;
+  --fg-subtle: #A1A1AA;
+  --accent: #EA580C;
+  --accent-soft: color-mix(in srgb, var(--accent) 8%, transparent);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0A0A0A;
+  --bg-elevated: #141414;
+  --fg: #FAFAFA;
+  --fg-muted: #A1A1AA;
+  --fg-subtle: #52525B;
+  --accent: #FF6A2C;
+
+  color-scheme: dark;
+}
+
+/* ============================================================
+   Tailwind @theme — exposes runtime tokens as utilities.
+   Usage: bg-bg, bg-bg-elevated, text-fg, text-fg-muted,
+          text-accent, font-sans, font-serif, font-mono, etc.
+   ============================================================ */
+@theme {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces Variable", ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", monospace;
+}
+
+/* ============================================================
+   Base element styles
+   ============================================================ */
+html {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+::selection {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ============================================================
+   Serif display variant
+   Fraunces exposes opsz (9-144) for optical sizing and SOFT
+   (0-100) for roundness. At display sizes we use opsz 144 for
+   more dramatic contrast and a touch of softening to round
+   the sharper geometric corners.
+   ============================================================ */
+.serif-display {
+  font-variation-settings: "opsz" 144, "SOFT" 30, "WONK" 0;
+}
+
+/* ============================================================
+   Motion layer — minimal, Anthropic-flavour.
+
+   Two kinds of animation:
+
+   1. Load animations run on page load. Every element with a class
+      from this group (.load-fade-up, .word, .blur-in) starts
+      invisible/transformed and animates to its resting state. Stagger
+      via the --i custom property, which the CSS consumes as a delay
+      multiplier (e.g. 60ms per index for words, 100ms per index for
+      stacked elements).
+
+   2. Reveal-on-scroll. Elements with class .reveal start in the
+      pre-reveal state (opacity 0, translated 24px down). A single
+      IntersectionObserver in Layout.astro adds .is-visible on first
+      intersection, triggering the transition. Fires once; does not
+      re-trigger on scroll-up-then-down.
+
+   Reduced-motion users (prefers-reduced-motion: reduce) get the
+   resting state instantly — no keyframes, no transitions.
+   ============================================================ */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes word-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blur-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.load-fade-up {
+  animation: fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 100ms);
+}
+
+.word {
+  display: inline-block;
+  animation: word-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 200ms);
+}
+
+.blur-in {
+  animation: blur-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load-fade-up,
+  .word,
+  .blur-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  html {
+    transition: none !important;
+  }
+}
+

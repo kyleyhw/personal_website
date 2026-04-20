@@ -1,0 +1,12 @@
+# Playwright MCP runtime artifacts (screenshots, DOM snapshots)
+.playwright-mcp/
+
+# Ad-hoc test screenshots at repo root
+phase*.png
+smoke-test.png
+
+# Orphan Astro scaffold from an earlier npm create retry
+satellite-kuiper/
+
+# OS / editor junk
+.DS_Store
