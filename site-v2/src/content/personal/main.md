@@ -2,7 +2,7 @@
 title: Personal
 ---
 
-## Interests
+## Personal Interests
 
 - **Rock climbing** — 9+ years experience both indoors and outdoors,
   with awards at amateur, inter-high-school, and inter-university
@@ -19,7 +19,7 @@ title: Personal
 - Mandarin (formally learned 10 years)
 - German (formally learned 10 years)
 
-## Memberships
+## Recent Memberships
 
 - Sidney Sussex College Football Team, Premier Division
 - Cambridge University Mountaineering Club
