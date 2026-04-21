@@ -173,7 +173,7 @@ const proseClass = [
         </ul>
       </Section>
 
-      <Section id="experience" label="Experience">
+      <Section id="experience" label="Research Experience">
         <ul class="space-y-10 max-w-2xl">
           {experience.map(async (entry) => {
             const { Content } = await render(entry);
@@ -209,7 +209,7 @@ const proseClass = [
         </ul>
       </Section>
 
-      <Section id="projects" label="Projects">
+      <Section id="projects" label="Featured Personal Projects">
         <ul class="space-y-8 max-w-2xl">
           {projects.map((entry) => (
             <li>
@@ -244,13 +244,13 @@ const proseClass = [
       </Section>
 
       {AwardsContent && (
-        <Section id="awards" label="Awards">
+        <Section id="awards" label="Honours, Awards and Scholarships">
           <div class={proseClass}><AwardsContent /></div>
         </Section>
       )}
 
       {CoursesContent && (
-        <Section id="courses" label="Courses">
+        <Section id="courses" label="Selected Courses">
           <div class={proseClass}><CoursesContent /></div>
         </Section>
       )}
