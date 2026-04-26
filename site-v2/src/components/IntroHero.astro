@@ -85,12 +85,35 @@ const taglineHtml = tagline
     var spacer = document.getElementById("intro-spacer");
     if (!overlay || !spacer) return;
 
+    // Teardown is a two-phase cross-fade so nothing pops:
+    //   Phase 1 (`data-intro-fading`): spacer is removed and
+    //   scroll reset, sidebar fades 0 → 1, overlay fades 1 → 0,
+    //   sections in the right column reveal via their existing
+    //   IntersectionObserver. The FLIP photo + name are still
+    //   visible at their target positions, so the sidebar's
+    //   actual photo + name cross-fade underneath without any
+    //   misalignment.
+    //   Phase 2 (~520 ms later): overlay removed from the DOM.
+    var FADE_MS = 500;
     function teardown() {
-      html.removeAttribute("data-intro-active");
-      html.style.setProperty("--intro-progress", "1");
-      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      // Spacer goes first so the SiteHeader is at the top before
+      // the cross-fade begins. scrollTo guards against any drift
+      // from accumulated wheel deltas during the FLIP.
       if (spacer && spacer.parentNode) spacer.parentNode.removeChild(spacer);
       window.scrollTo(0, 0);
+      html.style.setProperty("--intro-progress", "1");
+      html.removeAttribute("data-intro-active");
+      html.setAttribute("data-intro-fading", "true");
+      // Skip path: if reduced motion or the overlay was already
+      // gone before we ever animated, do an instant cleanup.
+      if (!overlay || !overlay.parentNode) {
+        html.removeAttribute("data-intro-fading");
+        return;
+      }
+      window.setTimeout(function () {
+        html.removeAttribute("data-intro-fading");
+        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      }, FADE_MS + 20);
     }
 
     if (html.getAttribute("data-intro-skip") === "true") {

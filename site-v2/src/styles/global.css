@@ -227,18 +227,45 @@ html[data-intro-active="true"] [data-intro-spacer] {
   display: block;
 }
 
-/* Hide the SiteHeader avatar + name during the intro phase —
-   the overlay's hero copies stand in until the FLIP transition
-   completes. Other sidebar chrome (nav, socials, CV, toggle)
-   remains rendered but is below the fold during the intro. */
+/* Hide the SiteHeader avatar + name during the active intro
+   phase — the overlay's hero copies stand in until the FLIP
+   completes. During the fade phase they become visible so
+   they can cross-fade in beneath the fading overlay. */
 html[data-intro-active="true"] .js-intro-target-photo,
 html[data-intro-active="true"] .js-intro-target-name {
   visibility: hidden;
 }
 
+/* Sidebar fades in smoothly during the fade phase. We tag the
+   sidebar element with `js-intro-sidebar` (added in
+   SiteHeader.astro) and drive its opacity off the html
+   `data-intro-*` attributes. A CSS transition handles the
+   smoothing — no JS animation. The header's existing
+   per-element load-fade-up entries (nav links, CV, socials,
+   toggle) all complete before the cross-fade begins, so they
+   are at full opacity when this parent fades in; the user
+   sees a single smooth reveal of the entire sidebar. */
+.js-intro-sidebar {
+  transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+html[data-intro-active="true"] .js-intro-sidebar {
+  opacity: 0;
+}
+html[data-intro-fading="true"] .js-intro-sidebar {
+  opacity: 1;
+}
+
+/* Right-column sections likewise fade in during the cross-fade
+   (rather than appearing the instant the overlay is removed).
+   They already have a `.reveal` IntersectionObserver-driven
+   transition; we just need their container to be visible
+   sooner. */
+
 /* Overlay container — full-viewport, behind nothing.
    Receives pointer events so a click anywhere triggers the
-   exit animation (matching the scroll trigger). */
+   exit animation (matching the scroll trigger). Stays in the
+   DOM during both the active and fading phases; opacity drops
+   to 0 over the fade phase, then JS removes it. */
 [data-intro-overlay] {
   display: none;
   position: fixed;
@@ -246,9 +273,17 @@ html[data-intro-active="true"] .js-intro-target-name {
   z-index: 60;
   background: var(--bg);
   cursor: pointer;
+  opacity: 1;
+  transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-html[data-intro-active="true"] [data-intro-overlay] {
+html[data-intro-active="true"] [data-intro-overlay],
+html[data-intro-fading="true"] [data-intro-overlay] {
   display: block;
+}
+html[data-intro-fading="true"] [data-intro-overlay] {
+  opacity: 0;
+  pointer-events: none;
+  cursor: default;
 }
 
 /* Entry animation for hero contents — opacity + filter only.
