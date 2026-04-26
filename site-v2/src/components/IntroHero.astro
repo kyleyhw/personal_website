@@ -27,17 +27,10 @@
    ============================================================ */
 interface Props {
   name: string;
-  tagline: string;
   profileSrc: string;
 }
 
-const { name, tagline, profileSrc } = Astro.props;
-
-const taglineHtml = tagline
-  .split(/\s+/)
-  .filter(Boolean)
-  .map((word, i) => `<span class="word" style="--i:${i}">${word}</span>`)
-  .join(" ");
+const { name, profileSrc } = Astro.props;
 ---
 
 {/* FOUC-safe pre-paint skip detection. Sets a flag on <html>
@@ -64,12 +57,7 @@ const taglineHtml = tagline
   <div class="intro-stack">
     <img class="intro-photo intro-fade-in serif-display" src={profileSrc} alt="" width="96" height="96" />
     <h1 class="intro-name intro-fade-in serif-display" style="--i: 1">{name}</h1>
-    <p
-      class="intro-tagline intro-fade-in"
-      style="--i: 3"
-      set:html={taglineHtml}
-    />
-    <div class="intro-cue intro-fade-in" style="--i: 4" aria-hidden="true">
+    <div class="intro-cue intro-fade-in" style="--i: 3" aria-hidden="true">
       <span class="intro-cue-label">Scroll</span>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M12 4V20M12 20L6 14M12 20L18 14" />
@@ -94,7 +82,7 @@ const taglineHtml = tagline
     //   actual photo + name cross-fade underneath without any
     //   misalignment.
     //   Phase 2 (~520 ms later): overlay removed from the DOM.
-    var FADE_MS = 500;
+    var FADE_MS = 200;
     function teardown() {
       // Spacer goes first so the SiteHeader is at the top before
       // the cross-fade begins. scrollTo guards against any drift
@@ -129,25 +117,35 @@ const taglineHtml = tagline
 
     var introPhoto = overlay.querySelector(".intro-photo");
     var introName = overlay.querySelector(".intro-name");
-    var introTagline = overlay.querySelector(".intro-tagline");
     var targetPhoto = document.querySelector(".js-intro-target-photo");
     var targetName = document.querySelector(".js-intro-target-name");
-    var targetTagline = document.querySelector(".js-intro-target-tagline");
-    if (
-      !introPhoto || !introName || !introTagline ||
-      !targetPhoto || !targetName || !targetTagline
-    ) {
+    if (!introPhoto || !introName || !targetPhoto || !targetName) {
       teardown();
       return;
     }
 
+    // Returns the visual bounding rect of an element's actual
+    // rendered glyphs via a DOM Range, rather than the element
+    // box rect. Critical for left-aligned text in a wider
+    // container (e.g. the sidebar h1 inside a 24rem column):
+    // the box rect spans the column, but the visible text only
+    // occupies its glyph extents at the column's left edge. We
+    // need to FLIP onto the glyphs, not the column.
+    function textRect(el) {
+      var r = document.createRange();
+      r.selectNodeContents(el);
+      var rect = r.getBoundingClientRect();
+      r.detach();
+      return rect;
+    }
+
     // Computes the FLIP variables (--target-x/y, --target-scale)
     // that drive an element from its current centred position to
-    // a measured target rect. Scaling is by height ratio so that
-    // text elements morph at consistent vertical rhythm; the
-    // photo, being square, scales the same on both axes anyway.
-    function flipTo(intro, target) {
-      var introRect = intro.getBoundingClientRect();
+    // a measured target rect. Scaling is by height ratio so text
+    // elements morph at consistent vertical rhythm; the photo,
+    // being square, scales the same on both axes anyway.
+    function flipTo(intro, introRectFn, target) {
+      var introRect = introRectFn(intro);
       var introCenter = {
         x: introRect.left + introRect.width / 2,
         y: introRect.top + introRect.height / 2,
@@ -162,42 +160,65 @@ const taglineHtml = tagline
       intro.style.setProperty("--target-scale", String(scale));
     }
 
-    function measure() {
-      // Targets reflect the layout the user will see AFTER teardown
-      // (no spacer, scroll at 0). We hide the spacer transiently to
-      // measure that geometry without triggering paint — the browser
-      // computes layout synchronously inside getBoundingClientRect.
-      var prevDisplay = spacer.style.display;
-      spacer.style.display = "none";
-      var pt = targetPhoto.getBoundingClientRect();
-      var nt = targetName.getBoundingClientRect();
-      var tt = targetTagline.getBoundingClientRect();
-      spacer.style.display = prevDisplay;
-
-      flipTo(introPhoto, pt);
-      flipTo(introName, nt);
-      flipTo(introTagline, tt);
+    function boxRect(el) {
+      return el.getBoundingClientRect();
     }
 
+    function measure() {
+      // Targets reflect the layout the user will see AFTER teardown
+      // (no spacer, scroll at 0). Hide the spacer transiently and
+      // force a reflow so subsequent rect reads are against the
+      // post-hide layout, not a cached one.
+      var prevDisplay = spacer.style.display;
+      spacer.style.display = "none";
+      void document.body.offsetHeight;
+      var pt = boxRect(targetPhoto);    // image — box == content
+      var nt = textRect(targetName);    // text in wider column — use glyph rect
+      spacer.style.display = prevDisplay;
+
+      flipTo(introPhoto, boxRect, pt);
+      flipTo(introName, textRect, nt);
+    }
+
+    // Initial measurement is fragile while web fonts are still
+    // loading — the sidebar's name target is a Fraunces glyph
+    // box, and Fraunces' metrics differ from the fallback serif
+    // used during the loading window. Measuring before fonts
+    // resolve gives us a target that drifts the moment Fraunces
+    // arrives. document.fonts.ready resolves once all fonts on
+    // the page are loaded (or fails open after a browser
+    // timeout), so re-measure on its callback. Combined with a
+    // pre-trigger re-measure below, this guarantees the FLIP
+    // lands on the post-teardown sidebar pixel-for-pixel.
     measure();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measure);
+    }
     window.addEventListener("resize", measure, { passive: true });
 
     // Latched-trigger animation: on the first scroll-down input,
-    // run --intro-progress 0 → 1 over 700ms. Decouples the
-    // animation length from the user's actual scroll distance,
-    // so a single wheel click is enough to dismiss the intro.
+    // re-measure (catches any layout drift since fonts.ready) and
+    // run --intro-progress 0 → 1 over 900ms. Decouples animation
+    // length from the user's actual scroll distance, so a single
+    // wheel click is enough to dismiss the intro.
     var triggered = false;
     function animateOut() {
       if (triggered) return;
       triggered = true;
+      // Last-moment re-measure so the FLIP lands exactly on the
+      // sidebar's photo + name even if anything has shifted.
+      measure();
       var startTs = 0;
-      var dur = 700;
+      var dur = 900;
       function step(now) {
         if (!startTs) startTs = now;
         var t = (now - startTs) / dur;
         if (t > 1) t = 1;
-        // ease-out cubic — fast start, soft landing.
-        var eased = 1 - Math.pow(1 - t, 3);
+        // ease-in-out cubic — gentle acceleration, soft landing,
+        // no abrupt initial jump.
+        var eased = t < 0.5
+          ? 4 * t * t * t
+          : 1 - Math.pow(-2 * t + 2, 3) / 2;
         html.style.setProperty("--intro-progress", String(eased));
         if (t < 1) {
           requestAnimationFrame(step);

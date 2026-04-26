@@ -227,47 +227,38 @@ html[data-intro-active="true"] [data-intro-spacer] {
   display: block;
 }
 
-/* Hide the SiteHeader avatar, name, and tagline during the
-   active intro phase — the overlay's hero copies stand in
-   until the FLIP completes. During the fade phase they
-   become visible so they can cross-fade in beneath the
-   fading overlay. */
-html[data-intro-active="true"] .js-intro-target-photo,
-html[data-intro-active="true"] .js-intro-target-name,
-html[data-intro-active="true"] .js-intro-target-tagline {
-  visibility: hidden;
-}
-
-/* Sidebar fades in smoothly during the fade phase. We tag the
-   sidebar element with `js-intro-sidebar` (added in
-   SiteHeader.astro) and drive its opacity off the html
-   `data-intro-*` attributes. A CSS transition handles the
-   smoothing — no JS animation. The header's existing
-   per-element load-fade-up entries (nav links, CV, socials,
-   toggle) all complete before the cross-fade begins, so they
-   are at full opacity when this parent fades in; the user
-   sees a single smooth reveal of the entire sidebar. */
+/* Sidebar chrome fades in CONCURRENTLY with the FLIP — its
+   opacity is driven directly off `--intro-progress`, so by the
+   time the FLIP photo + name reach the sidebar slot the rest
+   of the chrome (nav, View CV, socials, theme toggle, sidebar
+   tagline) is already at full opacity. No separate "fade
+   phase" wait state. */
 .js-intro-sidebar {
-  transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: var(--intro-progress, 1);
 }
-html[data-intro-active="true"] .js-intro-sidebar {
-  opacity: 0;
-}
-html[data-intro-fading="true"] .js-intro-sidebar {
+
+/* The sidebar's photo and name targets are kept invisible
+   throughout the FLIP so the user only sees the moving overlay
+   copies (no double-rendered ghosts at intermediate FLIP
+   positions). On exit, they cross-fade in over the same short
+   window that fades the overlay out — perfectly aligned with
+   the FLIP's final position, so the swap looks like a single
+   continuous element. */
+.js-intro-target-photo,
+.js-intro-target-name {
   opacity: 1;
+  transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+html[data-intro-active="true"] .js-intro-target-photo,
+html[data-intro-active="true"] .js-intro-target-name {
+  opacity: 0;
+  transition: none;
 }
 
-/* Right-column sections likewise fade in during the cross-fade
-   (rather than appearing the instant the overlay is removed).
-   They already have a `.reveal` IntersectionObserver-driven
-   transition; we just need their container to be visible
-   sooner. */
-
-/* Overlay container — full-viewport, behind nothing.
-   Receives pointer events so a click anywhere triggers the
-   exit animation (matching the scroll trigger). Stays in the
-   DOM during both the active and fading phases; opacity drops
-   to 0 over the fade phase, then JS removes it. */
+/* Overlay — full-viewport, behind nothing. Receives pointer
+   events so a click anywhere also triggers the exit. Stays
+   in the DOM during both the active and fading phases; opacity
+   drops over the fading phase, then JS removes it. */
 [data-intro-overlay] {
   display: none;
   position: fixed;
@@ -276,7 +267,7 @@ html[data-intro-fading="true"] .js-intro-sidebar {
   background: var(--bg);
   cursor: pointer;
   opacity: 1;
-  transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 html[data-intro-active="true"] [data-intro-overlay],
 html[data-intro-fading="true"] [data-intro-overlay] {
@@ -338,14 +329,11 @@ html[data-intro-fading="true"] [data-intro-overlay] {
 }
 
 .intro-photo,
-.intro-name,
-.intro-tagline {
-  /* FLIP delta is applied as a pure translate of px values
-     pre-multiplied by progress. Scaling is also pre-computed
-     against progress. transform-origin:center keeps the
-     scaled element pinned to its centre. Every element here
-     has a counterpart in the sidebar; non-shared elements
-     (cue) only fade. */
+.intro-name {
+  /* FLIP delta: translate by px deltas pre-multiplied by
+     progress, plus a pre-computed scale interpolation. Both
+     elements have a sidebar counterpart that they morph into;
+     non-shared elements (the cue) only fade. */
   transform-origin: center;
   will-change: transform;
   transform: translate(
@@ -373,21 +361,6 @@ html[data-intro-fading="true"] [data-intro-overlay] {
   color: var(--fg);
   margin: 0;
   white-space: nowrap;
-}
-
-/* Tagline matches the sidebar's font, italic, colour, and
-   max-width so the FLIP morph is purely a position translate
-   (scale ≈ 1). It does NOT fade on progress — the overlay
-   opacity transition handles its disappearance during the
-   cross-fade, in step with the sidebar tagline appearing. */
-.intro-tagline {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 1.125rem;
-  color: var(--fg-muted);
-  margin: 0.5rem 0 0;
-  max-width: 20rem;
-  white-space: normal;
 }
 
 .intro-cue {
