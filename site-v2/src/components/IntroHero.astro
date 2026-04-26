@@ -62,13 +62,14 @@ const taglineHtml = tagline
 
 <div id="intro-overlay" data-intro-overlay aria-hidden="true">
   <div class="intro-stack">
-    <img class="intro-photo blur-in" src={profileSrc} alt="" width="96" height="96" />
-    <h1 class="intro-name load-fade-up serif-display" style="--i: 1">{name}</h1>
+    <img class="intro-photo intro-fade-in serif-display" src={profileSrc} alt="" width="96" height="96" />
+    <h1 class="intro-name intro-fade-in serif-display" style="--i: 1">{name}</h1>
     <p
-      class="intro-tagline"
+      class="intro-tagline intro-fade-in"
+      style="--i: 3"
       set:html={taglineHtml}
     />
-    <div class="intro-cue load-fade-up" style="--i: 4" aria-hidden="true">
+    <div class="intro-cue intro-fade-in" style="--i: 4" aria-hidden="true">
       <span class="intro-cue-label">Scroll</span>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M12 4V20M12 20L6 14M12 20L18 14" />

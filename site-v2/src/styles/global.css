@@ -251,6 +251,34 @@ html[data-intro-active="true"] [data-intro-overlay] {
   display: block;
 }
 
+/* Entry animation for hero contents — opacity + filter only.
+   Crucially does NOT animate `transform`, so the FLIP
+   transform on .intro-photo and .intro-name is not overridden
+   by an in-flight load animation (animations win the cascade
+   over plain CSS values, so any transform-touching keyframe
+   would clobber the calc()-driven FLIP transform). */
+@keyframes intro-fade-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.intro-fade-in {
+  /* `backwards` (not `both`/`forwards`) so the post-animation
+     state falls back to the element's static CSS — this lets
+     `opacity: calc(1 - var(--intro-progress) * 6)` on the
+     tagline + cue actually take effect during the exit
+     animation. With a forwards-keeping fill mode, the
+     keyframe's final `opacity: 1` would clobber the calc(). */
+  animation: intro-fade-in 800ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
 /* Hero stack — photo + name + tagline + cue laid out
    vertically, centred in the viewport. Wrapping them in a
    flex column lets us drive the entire stack with ONE
@@ -331,9 +359,7 @@ html[data-intro-active="true"] [data-intro-overlay] {
   gap: 0.5rem;
   color: var(--accent);
   opacity: calc(1 - var(--intro-progress, 0) * 6);
-  animation: fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both,
-             intro-cue-bob 1.8s ease-in-out 1s infinite;
-  animation-delay: calc(var(--i, 0) * 100ms), 1s;
+  animation: intro-cue-bob 1.8s ease-in-out 1s infinite;
 }
 
 .intro-cue svg {
