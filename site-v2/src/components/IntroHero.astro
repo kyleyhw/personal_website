@@ -129,11 +129,37 @@ const taglineHtml = tagline
 
     var introPhoto = overlay.querySelector(".intro-photo");
     var introName = overlay.querySelector(".intro-name");
+    var introTagline = overlay.querySelector(".intro-tagline");
     var targetPhoto = document.querySelector(".js-intro-target-photo");
     var targetName = document.querySelector(".js-intro-target-name");
-    if (!introPhoto || !introName || !targetPhoto || !targetName) {
+    var targetTagline = document.querySelector(".js-intro-target-tagline");
+    if (
+      !introPhoto || !introName || !introTagline ||
+      !targetPhoto || !targetName || !targetTagline
+    ) {
       teardown();
       return;
+    }
+
+    // Computes the FLIP variables (--target-x/y, --target-scale)
+    // that drive an element from its current centred position to
+    // a measured target rect. Scaling is by height ratio so that
+    // text elements morph at consistent vertical rhythm; the
+    // photo, being square, scales the same on both axes anyway.
+    function flipTo(intro, target) {
+      var introRect = intro.getBoundingClientRect();
+      var introCenter = {
+        x: introRect.left + introRect.width / 2,
+        y: introRect.top + introRect.height / 2,
+      };
+      var targetCenter = {
+        x: target.left + target.width / 2,
+        y: target.top + target.height / 2,
+      };
+      var scale = target.height / introRect.height;
+      intro.style.setProperty("--target-x", (targetCenter.x - introCenter.x) + "px");
+      intro.style.setProperty("--target-y", (targetCenter.y - introCenter.y) + "px");
+      intro.style.setProperty("--target-scale", String(scale));
     }
 
     function measure() {
@@ -145,25 +171,12 @@ const taglineHtml = tagline
       spacer.style.display = "none";
       var pt = targetPhoto.getBoundingClientRect();
       var nt = targetName.getBoundingClientRect();
+      var tt = targetTagline.getBoundingClientRect();
       spacer.style.display = prevDisplay;
 
-      // Photo: FLIP delta is target-centre minus current overlay-centre.
-      var ip = introPhoto.getBoundingClientRect();
-      var ipCenter = { x: ip.left + ip.width / 2, y: ip.top + ip.height / 2 };
-      var ptCenter = { x: pt.left + pt.width / 2, y: pt.top + pt.height / 2 };
-      var photoScale = pt.width / ip.width;
-      introPhoto.style.setProperty("--target-x", (ptCenter.x - ipCenter.x) + "px");
-      introPhoto.style.setProperty("--target-y", (ptCenter.y - ipCenter.y) + "px");
-      introPhoto.style.setProperty("--target-scale", String(photoScale));
-
-      // Name: scale by height ratio so visual weight matches; align centres.
-      var ina = introName.getBoundingClientRect();
-      var inaCenter = { x: ina.left + ina.width / 2, y: ina.top + ina.height / 2 };
-      var ntCenter = { x: nt.left + nt.width / 2, y: nt.top + nt.height / 2 };
-      var nameScale = nt.height / ina.height;
-      introName.style.setProperty("--target-x", (ntCenter.x - inaCenter.x) + "px");
-      introName.style.setProperty("--target-y", (ntCenter.y - inaCenter.y) + "px");
-      introName.style.setProperty("--target-scale", String(nameScale));
+      flipTo(introPhoto, pt);
+      flipTo(introName, nt);
+      flipTo(introTagline, tt);
     }
 
     measure();

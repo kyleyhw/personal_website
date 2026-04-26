@@ -227,12 +227,14 @@ html[data-intro-active="true"] [data-intro-spacer] {
   display: block;
 }
 
-/* Hide the SiteHeader avatar + name during the active intro
-   phase — the overlay's hero copies stand in until the FLIP
-   completes. During the fade phase they become visible so
-   they can cross-fade in beneath the fading overlay. */
+/* Hide the SiteHeader avatar, name, and tagline during the
+   active intro phase — the overlay's hero copies stand in
+   until the FLIP completes. During the fade phase they
+   become visible so they can cross-fade in beneath the
+   fading overlay. */
 html[data-intro-active="true"] .js-intro-target-photo,
-html[data-intro-active="true"] .js-intro-target-name {
+html[data-intro-active="true"] .js-intro-target-name,
+html[data-intro-active="true"] .js-intro-target-tagline {
   visibility: hidden;
 }
 
@@ -336,11 +338,14 @@ html[data-intro-fading="true"] [data-intro-overlay] {
 }
 
 .intro-photo,
-.intro-name {
+.intro-name,
+.intro-tagline {
   /* FLIP delta is applied as a pure translate of px values
      pre-multiplied by progress. Scaling is also pre-computed
      against progress. transform-origin:center keeps the
-     scaled element pinned to its centre. */
+     scaled element pinned to its centre. Every element here
+     has a counterpart in the sidebar; non-shared elements
+     (cue) only fade. */
   transform-origin: center;
   will-change: transform;
   transform: translate(
@@ -370,17 +375,19 @@ html[data-intro-fading="true"] [data-intro-overlay] {
   white-space: nowrap;
 }
 
-/* Tagline + cue fade out almost immediately on any scroll
-   so the user sees the intro dissolve on a single tick. */
+/* Tagline matches the sidebar's font, italic, colour, and
+   max-width so the FLIP morph is purely a position translate
+   (scale ≈ 1). It does NOT fade on progress — the overlay
+   opacity transition handles its disappearance during the
+   cross-fade, in step with the sidebar tagline appearing. */
 .intro-tagline {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 1.125rem;
   color: var(--fg-muted);
   margin: 0.5rem 0 0;
-  text-align: center;
-  max-width: min(36rem, 80vw);
-  opacity: calc(1 - var(--intro-progress, 0) * 6);
+  max-width: 20rem;
+  white-space: normal;
 }
 
 .intro-cue {
