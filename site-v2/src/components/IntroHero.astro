@@ -1,0 +1,164 @@
+---
+/* ============================================================
+   IntroHero — full-viewport welcome that morphs into the
+   sticky-sidebar layout as the user scrolls.
+
+   Mechanism (FLIP-style, no DOM duplication of layout):
+   - On load, render a fixed overlay containing a hero-sized
+     copy of the photo + name + tagline + scroll cue. A 100vh
+     spacer is also rendered above the main layout so the user
+     can scroll through the intro phase.
+   - An inline script measures the resting position of the
+     SiteHeader's photo and name (`.js-intro-target-photo`,
+     `.js-intro-target-name`), computes per-element translation
+     deltas + scale factors, and writes them as CSS variables
+     on the overlay's photo/name nodes.
+   - A rAF-throttled scroll listener sets `--intro-progress` on
+     `<html>` to scrollY/vh ∈ [0, 1]. CSS `calc()` interpolates
+     transform values off that variable.
+   - When progress reaches 1, the script removes the overlay
+     and spacer, resets scroll to 0, and the SiteHeader becomes
+     the new top of the page. Scrolling back up stops there.
+
+   Skip paths: deep-link load (`location.hash`),
+   `prefers-reduced-motion: reduce`, or scroll-restored reload
+   (`scrollY > 0`) — the overlay/spacer are removed before any
+   animation runs.
+   ============================================================ */
+interface Props {
+  name: string;
+  tagline: string;
+  profileSrc: string;
+}
+
+const { name, tagline, profileSrc } = Astro.props;
+
+const taglineHtml = tagline
+  .split(/\s+/)
+  .filter(Boolean)
+  .map((word, i) => `<span class="word" style="--i:${i}">${word}</span>`)
+  .join(" ");
+---
+
+{/* FOUC-safe pre-paint skip detection. Sets a flag on <html>
+    before first paint when we know the intro should not run. */}
+<script is:inline>
+  (function () {
+    try {
+      var hasHash = !!window.location.hash;
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (hasHash || reduced) {
+        document.documentElement.setAttribute("data-intro-skip", "true");
+      } else {
+        document.documentElement.setAttribute("data-intro-active", "true");
+      }
+    } catch (e) {
+      document.documentElement.setAttribute("data-intro-skip", "true");
+    }
+  })();
+</script>
+
+<div id="intro-spacer" data-intro-spacer aria-hidden="true"></div>
+
+<div id="intro-overlay" data-intro-overlay aria-hidden="true">
+  <div class="intro-stack">
+    <img class="intro-photo blur-in" src={profileSrc} alt="" width="96" height="96" />
+    <h1 class="intro-name load-fade-up serif-display" style="--i: 1">{name}</h1>
+    <p
+      class="intro-tagline"
+      set:html={taglineHtml}
+    />
+    <div class="intro-cue load-fade-up" style="--i: 4" aria-hidden="true">
+      <span class="intro-cue-label">Scroll</span>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 4V20M12 20L6 14M12 20L18 14" />
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    var html = document.documentElement;
+    var overlay = document.getElementById("intro-overlay");
+    var spacer = document.getElementById("intro-spacer");
+    if (!overlay || !spacer) return;
+
+    function teardown() {
+      html.removeAttribute("data-intro-active");
+      html.style.setProperty("--intro-progress", "1");
+      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      if (spacer && spacer.parentNode) spacer.parentNode.removeChild(spacer);
+      window.scrollTo(0, 0);
+    }
+
+    if (html.getAttribute("data-intro-skip") === "true") {
+      teardown();
+      return;
+    }
+
+    // Scroll-restored reload — bypass intro instantly.
+    if (window.scrollY > 0) {
+      teardown();
+      return;
+    }
+
+    var introPhoto = overlay.querySelector(".intro-photo");
+    var introName = overlay.querySelector(".intro-name");
+    var targetPhoto = document.querySelector(".js-intro-target-photo");
+    var targetName = document.querySelector(".js-intro-target-name");
+    if (!introPhoto || !introName || !targetPhoto || !targetName) {
+      teardown();
+      return;
+    }
+
+    function measure() {
+      // Targets — final resting positions inside SiteHeader.
+      var pt = targetPhoto.getBoundingClientRect();
+      var nt = targetName.getBoundingClientRect();
+
+      // Photo: hero is centred via top/left 50% + translate(-50%, -50%).
+      // FLIP delta is target-centre minus viewport-centre.
+      var ip = introPhoto.getBoundingClientRect();
+      var ipCenter = { x: ip.left + ip.width / 2, y: ip.top + ip.height / 2 };
+      var ptCenter = { x: pt.left + pt.width / 2, y: pt.top + pt.height / 2 };
+      var photoScale = pt.width / ip.width;
+      introPhoto.style.setProperty("--target-x", (ptCenter.x - ipCenter.x) + "px");
+      introPhoto.style.setProperty("--target-y", (ptCenter.y - ipCenter.y) + "px");
+      introPhoto.style.setProperty("--target-scale", String(photoScale));
+
+      // Name: scale by height ratio so visual weight matches; align centres.
+      var ina = introName.getBoundingClientRect();
+      var inaCenter = { x: ina.left + ina.width / 2, y: ina.top + ina.height / 2 };
+      var ntCenter = { x: nt.left + nt.width / 2, y: nt.top + nt.height / 2 };
+      var nameScale = nt.height / ina.height;
+      introName.style.setProperty("--target-x", (ntCenter.x - inaCenter.x) + "px");
+      introName.style.setProperty("--target-y", (ntCenter.y - inaCenter.y) + "px");
+      introName.style.setProperty("--target-scale", String(nameScale));
+    }
+
+    measure();
+    window.addEventListener("resize", measure, { passive: true });
+
+    var raf = null;
+    var done = false;
+    function update() {
+      raf = null;
+      if (done) return;
+      var p = window.scrollY / window.innerHeight;
+      if (p < 0) p = 0;
+      if (p > 1) p = 1;
+      html.style.setProperty("--intro-progress", String(p));
+      if (p >= 1) {
+        done = true;
+        teardown();
+      }
+    }
+    function schedule() {
+      if (raf !== null) return;
+      raf = requestAnimationFrame(update);
+    }
+    window.addEventListener("scroll", schedule, { passive: true });
+    update();
+  })();
+</script>

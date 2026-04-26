@@ -201,3 +201,168 @@ a {
   }
 }
 
+/* ============================================================
+   Intro hero — full-viewport welcome that morphs into the
+   sticky-sidebar layout as the user scrolls.
+
+   Driven by `--intro-progress` ∈ [0, 1] set on <html> by the
+   inline script in IntroHero.astro. p=0 is the centred hero
+   state; p=1 is the photo and name aligned over the resting
+   sidebar slot, at which point the script removes overlay +
+   spacer and resets scroll to 0.
+
+   Uses CSS `calc()` over a unitless --intro-progress and
+   px-typed --target-x/--target-y deltas. Mixed-unit calc
+   (px * unitless) is valid CSS.
+   ============================================================ */
+
+/* The 100vh spacer pushes the main layout grid below the fold
+   so the user has somewhere to scroll. Only present while the
+   intro is active; the script removes it on teardown. */
+[data-intro-spacer] {
+  display: none;
+  height: 100vh;
+}
+html[data-intro-active="true"] [data-intro-spacer] {
+  display: block;
+}
+
+/* Hide the SiteHeader avatar + name during the intro phase —
+   the overlay's hero copies stand in until the FLIP transition
+   completes. Other sidebar chrome (nav, socials, CV, toggle)
+   remains rendered but is below the fold during the intro. */
+html[data-intro-active="true"] .js-intro-target-photo,
+html[data-intro-active="true"] .js-intro-target-name {
+  visibility: hidden;
+}
+
+/* Overlay container — full-viewport, behind nothing. */
+[data-intro-overlay] {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  pointer-events: none;
+}
+html[data-intro-active="true"] [data-intro-overlay] {
+  display: block;
+}
+
+/* Photo + name share an absolute centred origin; transform
+   carries them toward the FLIP target as --intro-progress
+   goes 0 → 1. transform-origin:center keeps scaling stable
+   relative to the geometric centre. */
+.intro-photo,
+.intro-name {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.intro-photo {
+  width: 12rem;
+  height: 12rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  outline: 1px solid var(--fg-subtle);
+  outline-offset: -1px;
+  /* Centre, then translate by FLIP delta * progress, then scale. */
+  transform:
+    translate(-50%, -50%)
+    translate(
+      calc(var(--target-x, 0px) * var(--intro-progress, 0)),
+      calc(var(--target-y, 0px) * var(--intro-progress, 0))
+    )
+    scale(calc(1 + (var(--target-scale, 1) - 1) * var(--intro-progress, 0)));
+}
+
+.intro-name {
+  /* Visual weight in the hero — large display Fraunces. */
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(3.5rem, 9vw, 7rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  margin: 0;
+  white-space: nowrap;
+  /* Sit just below the photo at hero state — 0.5 photo-height
+     plus a 1.5rem gap, all measured from viewport centre. */
+  --hero-offset-y: calc(6rem + 1.5rem);
+  transform:
+    translate(-50%, -50%)
+    translateY(var(--hero-offset-y))
+    translate(
+      calc(var(--target-x, 0px) * var(--intro-progress, 0)),
+      calc(var(--target-y, 0px) * var(--intro-progress, 0))
+    )
+    scale(calc(1 + (var(--target-scale, 1) - 1) * var(--intro-progress, 0)));
+}
+
+/* Tagline + scroll cue fade out over the first 40% of progress. */
+.intro-tagline {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  /* Photo (12rem, ie 6rem half) + name (~clamped block) + gap. */
+  transform: translate(-50%, calc(-50% + 12rem + 2rem));
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.125rem;
+  color: var(--fg-muted);
+  margin: 0;
+  text-align: center;
+  max-width: min(36rem, 80vw);
+  opacity: calc(1 - var(--intro-progress, 0) * 2.5);
+}
+
+.intro-cue {
+  position: fixed;
+  left: 50%;
+  bottom: 3rem;
+  transform: translateX(-50%);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--fg-subtle);
+  opacity: calc(1 - var(--intro-progress, 0) * 2.5);
+  animation: fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both,
+             intro-cue-bob 1.8s ease-in-out 1s infinite;
+  animation-delay: calc(var(--i, 0) * 100ms), 1s;
+}
+
+.intro-cue svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.intro-cue-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+@keyframes intro-cue-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Belt + braces — the inline script also short-circuits here,
+     but if it ever fails to run, hide the overlay anyway. */
+  [data-intro-overlay],
+  [data-intro-spacer] {
+    display: none !important;
+  }
+  html[data-intro-active="true"] .js-intro-target-photo,
+  html[data-intro-active="true"] .js-intro-target-name {
+    visibility: visible;
+  }
+}
+

@@ -6,6 +6,7 @@ import { getCollection, getEntry, render } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import Section from "../components/Section.astro";
+import IntroHero from "../components/IntroHero.astro";
 
 const asset = (path: string) =>
   (import.meta.env.BASE_URL + "/" + path).replace(/\/+/g, "/");
@@ -133,6 +134,12 @@ const proseClass = [
 ---
 
 <Layout title={`${site.data.name} — ${site.data.tagline}`} description={site.data.tagline}>
+  <IntroHero
+    name={site.data.name}
+    tagline={site.data.tagline}
+    profileSrc={asset("profile_pic.jpeg")}
+  />
+
   <div
     class="mx-auto max-w-7xl px-6 md:px-12 lg:px-24 lg:grid lg:grid-cols-[minmax(0,24rem)_1fr] lg:gap-24"
   >
