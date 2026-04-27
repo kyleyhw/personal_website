@@ -201,3 +201,209 @@ a {
   }
 }
 
+/* ============================================================
+   Intro hero — full-viewport welcome that morphs into the
+   sticky-sidebar layout as the user scrolls.
+
+   Driven by `--intro-progress` ∈ [0, 1] set on <html> by the
+   inline script in IntroHero.astro. p=0 is the centred hero
+   state; p=1 is the photo and name aligned over the resting
+   sidebar slot, at which point the script removes overlay +
+   spacer and resets scroll to 0.
+
+   Uses CSS `calc()` over a unitless --intro-progress and
+   px-typed --target-x/--target-y deltas. Mixed-unit calc
+   (px * unitless) is valid CSS.
+   ============================================================ */
+
+/* The 100vh spacer pushes the main layout grid below the fold
+   so the user has somewhere to scroll. Only present while the
+   intro is active; the script removes it on teardown. */
+[data-intro-spacer] {
+  display: none;
+  height: 100vh;
+}
+html[data-intro-active="true"] [data-intro-spacer] {
+  display: block;
+}
+
+/* Sidebar chrome fades in CONCURRENTLY with the FLIP — its
+   opacity is driven directly off `--intro-progress`, so by the
+   time the FLIP photo + name reach the sidebar slot the rest
+   of the chrome (nav, View CV, socials, theme toggle, sidebar
+   tagline) is already at full opacity. No separate "fade
+   phase" wait state. */
+.js-intro-sidebar {
+  opacity: var(--intro-progress, 1);
+}
+
+/* The sidebar's photo and name targets are kept invisible
+   throughout the FLIP so the user only sees the moving overlay
+   copies (no double-rendered ghosts at intermediate FLIP
+   positions). On exit, they cross-fade in over the same short
+   window that fades the overlay out — perfectly aligned with
+   the FLIP's final position, so the swap looks like a single
+   continuous element. */
+.js-intro-target-photo,
+.js-intro-target-name {
+  opacity: 1;
+  transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+html[data-intro-active="true"] .js-intro-target-photo,
+html[data-intro-active="true"] .js-intro-target-name {
+  opacity: 0;
+  transition: none;
+}
+
+/* Overlay — full-viewport, behind nothing. Receives pointer
+   events so a click anywhere also triggers the exit. Stays
+   in the DOM during both the active and fading phases; opacity
+   drops over the fading phase, then JS removes it. */
+[data-intro-overlay] {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+html[data-intro-active="true"] [data-intro-overlay],
+html[data-intro-fading="true"] [data-intro-overlay] {
+  display: block;
+}
+html[data-intro-fading="true"] [data-intro-overlay] {
+  opacity: 0;
+  pointer-events: none;
+  cursor: default;
+}
+
+/* Entry animation for hero contents — opacity + filter only.
+   Crucially does NOT animate `transform`, so the FLIP
+   transform on .intro-photo and .intro-name is not overridden
+   by an in-flight load animation (animations win the cascade
+   over plain CSS values, so any transform-touching keyframe
+   would clobber the calc()-driven FLIP transform). */
+@keyframes intro-fade-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.intro-fade-in {
+  /* `backwards` (not `both`/`forwards`) so the post-animation
+     state falls back to the element's static CSS — this lets
+     `opacity: calc(1 - var(--intro-progress) * 6)` on the
+     tagline + cue actually take effect during the exit
+     animation. With a forwards-keeping fill mode, the
+     keyframe's final `opacity: 1` would clobber the calc(). */
+  animation: intro-fade-in 800ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* Hero stack — photo + name + tagline + cue laid out
+   vertically, centred in the viewport. Wrapping them in a
+   flex column lets us drive the entire stack with ONE
+   transform on the stack, plus a per-element transform that
+   adds the FLIP delta * progress. This avoids a Chromium
+   parsing quirk where mixing translate(-50%, -50%) with
+   var()-based calc()s in a multi-token transform yields
+   identity. */
+.intro-stack {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  pointer-events: none;
+  /* Stack contents fade out a bit faster than the overlay
+     itself — visual handoff feels crisp. */
+}
+
+.intro-photo,
+.intro-name {
+  /* FLIP delta: translate by px deltas pre-multiplied by
+     progress, plus a pre-computed scale interpolation. Both
+     elements have a sidebar counterpart that they morph into;
+     non-shared elements (the cue) only fade. */
+  transform-origin: center;
+  will-change: transform;
+  transform: translate(
+      calc(var(--target-x, 0px) * var(--intro-progress, 0)),
+      calc(var(--target-y, 0px) * var(--intro-progress, 0))
+    )
+    scale(calc(1 + (var(--target-scale, 1) - 1) * var(--intro-progress, 0)));
+}
+
+.intro-photo {
+  width: 12rem;
+  height: 12rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  outline: 1px solid var(--fg-subtle);
+  outline-offset: -1px;
+}
+
+.intro-name {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(3.5rem, 9vw, 7rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.intro-cue {
+  position: fixed;
+  left: 50%;
+  bottom: 3rem;
+  transform: translateX(-50%);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--accent);
+  opacity: calc(1 - var(--intro-progress, 0) * 6);
+  animation: intro-cue-bob 1.8s ease-in-out 1s infinite;
+}
+
+.intro-cue svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.intro-cue-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+@keyframes intro-cue-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Belt + braces — the inline script also short-circuits here,
+     but if it ever fails to run, hide the overlay anyway. */
+  [data-intro-overlay],
+  [data-intro-spacer] {
+    display: none !important;
+  }
+  html[data-intro-active="true"] .js-intro-target-photo,
+  html[data-intro-active="true"] .js-intro-target-name {
+    visibility: visible;
+  }
+}
+

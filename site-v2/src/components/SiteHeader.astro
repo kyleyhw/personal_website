@@ -37,7 +37,7 @@ const taglineHtml = tagline
 ---
 
 <header
-  class="lg:sticky lg:top-0 lg:h-screen lg:max-h-screen lg:py-24 lg:flex lg:flex-col lg:justify-between py-12"
+  class="js-intro-sidebar lg:sticky lg:top-0 lg:h-screen lg:max-h-screen lg:py-24 lg:flex lg:flex-col lg:justify-between py-12"
 >
   <div>
     {profileSrc && (
@@ -46,18 +46,18 @@ const taglineHtml = tagline
         alt={name}
         width="96"
         height="96"
-        class="blur-in w-24 h-24 rounded-full object-cover mb-8 ring-1 ring-fg-subtle/30"
+        class="js-intro-target-photo blur-in w-24 h-24 rounded-full object-cover mb-8 ring-1 ring-fg-subtle/30"
       />
     )}
 
     <h1
-      class="load-fade-up font-serif font-medium text-5xl leading-[1.05] tracking-tight text-fg mb-3 serif-display"
+      class="js-intro-target-name load-fade-up font-serif font-medium text-5xl leading-[1.05] tracking-tight text-fg mb-3 serif-display"
       style="--i: 1"
     >
       {name}
     </h1>
     <p
-      class="font-serif italic text-lg text-fg-muted mb-12 max-w-xs"
+      class="js-intro-target-tagline font-serif italic text-lg text-fg-muted mb-12 max-w-xs"
       set:html={taglineHtml}
     />
 
