@@ -5,13 +5,6 @@ location: Cambridge, England, United Kingdom
 startDate: 2024-10-01
 endDate: 2025-09-30
 supervisor: Prof. Anastasia Fialkov
-skills:
-  - Scientific computing
-  - Simulation
-  - Data visualization
-  - Cosmology
-  - Python
-  - MATLAB
 ---
 
 Implemented and statistically validated variable cosmological initial
