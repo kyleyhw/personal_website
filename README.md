@@ -83,7 +83,7 @@ time by `content.config.ts`:
 | About      | `about/main.md`                          | Intro paragraph — short.                                     |
 | Education  | `education/*.md`                         | One file per degree. Frontmatter: institution, degree, location, startDate, endDate, honour. Sorted by endDate desc. |
 | Experience | `experience/*.md`                        | One file per role. Frontmatter: role, organization, location, startDate, endDate, supervisor, skills. Body = Markdown description. Sorted by endDate desc. |
-| Projects   | `projects/*.md`                          | Public repos auto-sync from `site.yaml::featured_repos`. Private / non-GitHub projects: hand-author a file with `manual: true`. Override auto-pulled GitHub descriptions via `description_override`. Sorted by `priority` desc. |
+| Projects   | `projects/*.md`                          | CV-ordered repos sync from `site.yaml::cv_repos`; pinned repos on the GitHub profile auto-append (deduped by URL). Private / non-GitHub projects: hand-author a file with `manual: true`. Override auto-pulled GitHub descriptions via `description_override`. Sorted by `priority` desc. |
 | Awards     | `awards/main.md`                         | Single Markdown file. Bullet list.                           |
 | Courses    | `courses/main.md`                        | Single Markdown file. Bullet list.                           |
 | Skills     | `skills/main.md`                         | Single Markdown file. Bullet list with `**Category:**` prefixes. |

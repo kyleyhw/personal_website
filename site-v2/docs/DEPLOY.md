@@ -102,7 +102,7 @@ Total propagation is typically 15-60 minutes.
 | Symptom | Cause | Fix |
 |---|---|---|
 | Workflow fails with "rate limit exceeded" on the GitHub API | Build ran with insufficient auth | Confirm `GITHUB_TOKEN` is being passed to the build step (already configured in the workflow). |
-| A private repo appears with fetch error | Script treats all whitelisted entries as public; built-in `GITHUB_TOKEN` cannot read private repos either | Move the entry out of `featured_repos`, create a manual `.md` file with `manual: true`. |
+| A private repo appears with fetch error | Script treats all `cv_repos` entries as public; the built-in `GITHUB_TOKEN` cannot read private repos either | Create a manual `.md` file with `manual: true` for that slug. The fetcher detects the manual file and skips the API call. |
 | Content schema validation error at build time | Missing or malformed frontmatter in a content file | Run `npm run build` locally; the error message will point to the file and the field. |
 | 404 on profile picture or favicon | Base path not applied to a hardcoded asset URL | All internal assets must go through the `asset()` helper defined in `Layout.astro` and `index.astro`. Grep for `href="/` and `src="/` to catch new ones. |
 | Fonts flash briefly before loading | `@fontsource` files download on first paint | Already mitigated by `font-display: swap`. Acceptable default behaviour. |

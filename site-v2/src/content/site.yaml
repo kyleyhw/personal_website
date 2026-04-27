@@ -12,10 +12,18 @@ main:
 
   github_username: kyleyhw
 
-  # Ordered high-to-low priority. mercury_strategies is a private repo —
-  # it is authored as a manual markdown entry under src/content/projects/
-  # and is NOT fetched by the sync script; it is listed here purely for
-  # reference.
-  featured_repos:
+  # CV-ordered featured projects, top of the list to bottom. The sync
+  # script (scripts/fetch-github-repos.mjs) iterates this list, fetches
+  # each public repo via the GitHub REST API, and writes a markdown
+  # entry under src/content/projects/. Slugs that already have a
+  # `manual: true` markdown file (e.g. private repos like
+  # `mercury_strategies`) are skipped by the fetcher; their handcrafted
+  # frontmatter — including a high `priority` value — keeps them on top.
+  #
+  # Repos pinned on the GitHub profile but NOT listed here are appended
+  # below this list, in profile-pin order. Duplicates between cv_repos
+  # and pinned (matched by `html_url`) are removed.
+  cv_repos:
+    - mercury_strategies
     - quant_core
-    - sound_simulation
+    - agent-evolve
