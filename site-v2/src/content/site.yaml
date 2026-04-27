@@ -8,7 +8,13 @@ main:
     github: https://github.com/kyleyhw
     linkedin: https://www.linkedin.com/in/kyle-wong-a95030281/
 
-  cv_url: https://github.com/kyleyhw/kyle_wong_cv/raw/main/kyle_wong_cv_apr_2026_industry.pdf
+  # Relative path under the site's BASE_URL. The CV PDF is fetched
+  # at build time by scripts/fetch-cv.mjs (most recently updated
+  # file from kyleyhw/kyle_wong_cv) and written to public/cv.pdf,
+  # which GitHub Pages serves with `Content-Disposition: inline` —
+  # so the link opens the PDF in a browser tab rather than
+  # forcing a download.
+  cv_url: cv.pdf
 
   github_username: kyleyhw
 

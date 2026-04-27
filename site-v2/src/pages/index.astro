@@ -148,7 +148,7 @@ const proseClass = [
       email={site.data.socials.email}
       github={site.data.socials.github}
       linkedin={site.data.socials.linkedin}
-      cvUrl={site.data.cv_url}
+      cvUrl={/^https?:/.test(site.data.cv_url) ? site.data.cv_url : asset(site.data.cv_url)}
       profileSrc={asset("profile_pic.jpeg")}
     />
 
