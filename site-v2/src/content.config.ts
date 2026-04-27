@@ -17,7 +17,7 @@ const site = defineCollection({
     }),
     cv_url: z.string().url(),
     github_username: z.string(),
-    featured_repos: z.array(z.string()),
+    cv_repos: z.array(z.string()),
   }),
 });
 
