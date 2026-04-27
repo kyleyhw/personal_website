@@ -11,7 +11,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "sync:github": "node scripts/fetch-github-repos.mjs",
-    "prebuild": "node scripts/fetch-github-repos.mjs"
+    "sync:cv": "node scripts/fetch-cv.mjs",
+    "prebuild": "node scripts/fetch-github-repos.mjs && node scripts/fetch-cv.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.2.9",

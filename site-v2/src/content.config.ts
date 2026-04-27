@@ -15,7 +15,10 @@ const site = defineCollection({
       github: z.string().url(),
       linkedin: z.string().url(),
     }),
-    cv_url: z.string().url(),
+    // Either an absolute URL or a path resolved against BASE_URL
+    // via the `asset()` helper in pages/index.astro. The current
+    // build serves cv.pdf from public/ for inline display.
+    cv_url: z.string(),
     github_username: z.string(),
     cv_repos: z.array(z.string()),
   }),

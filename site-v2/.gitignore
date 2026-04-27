@@ -22,3 +22,7 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# CV PDF — fetched at build time by scripts/fetch-cv.mjs from
+# kyleyhw/kyle_wong_cv, regenerated on every deploy.
+public/cv.pdf
